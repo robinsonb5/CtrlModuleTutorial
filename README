@@ -1,0 +1,17 @@
+CtrlModuleTutorial
+------------------
+
+This repository will contain a demo project, tagged at key points,
+demonstrating how to add an on-screen display and control CPU
+to an FPGA core.
+
+Checkout instructions
+---------------------
+The Control Module uses the ZPUFlex processor, which this repository includes
+as a git submodule - to pull in the requisite files do the following:
+
+> git clone https://github.com/robinsonb5/CtrlModuleTutorial.git
+> cd CtrlModuleTutorial
+> git submodule init
+> git submodule update
+
