@@ -72,6 +72,21 @@ signal testpattern : std_logic_vector(1 downto 0);
 
 begin
 
+
+-- Control module
+
+MyCtrlModule : entity work.CtrlModule
+	port map (
+		clk => CLK,
+		reset_n => reset,
+
+		-- DIP switches
+		dipswitches(1 downto 0) => testpattern -- Replaces previous binding from the physical DIP switches
+	);
+
+
+-- The core proper
+
 vgamaster : entity work.video_vga_master
 	port map (
 -- System
@@ -97,8 +112,6 @@ vgamaster : entity work.video_vga_master
 		ySyncFr => X"1F4",
 		ySyncTo => X"1F6"
 	);
-	
-testpattern<=sw;
 
 process(clk,vga_X,vga_Y)
 begin
