@@ -110,7 +110,6 @@ architecture rtl of DE1_Toplevel is
 
 signal reset : std_logic;
 signal sysclk      : std_logic;
-signal memclk      : std_logic;
 signal pll_locked : std_logic;
 
 signal ps2m_clk_in : std_logic;
@@ -196,6 +195,8 @@ virtualtoplevel : entity work.Virtual_Toplevel
 	port map(
 		reset => KEY(0),
 		CLK => sysclk,
+		
+		sw => sw(1 downto 0),
 
     -- SDRAM DE1 ports
 --	 pMemClk => DRAM_CLK,
@@ -251,7 +252,7 @@ virtualtoplevel : entity work.Virtual_Toplevel
 			outbits => 4
 		)
 		port map(
-			clk=>memclk, -- FIXME - sysclk
+			clk=>sysclk,
 			hsync=>vga_hsync,
 			vsync=>vga_vsync,
 			vid_ena=>vga_window,

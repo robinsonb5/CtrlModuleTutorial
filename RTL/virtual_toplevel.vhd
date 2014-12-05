@@ -16,6 +16,8 @@ entity Virtual_Toplevel is
 		reset : in std_logic;
 		CLK : in std_logic;
 
+		sw : in std_logic_vector(1 downto 0) := "00";
+		
 		DRAM_ADDR	: out std_logic_vector(rowAddrBits-1 downto 0);
 		DRAM_BA_0	: out std_logic;
 		DRAM_BA_1	: out std_logic;
@@ -66,6 +68,8 @@ signal eoframe : std_logic;
 signal vga_X : unsigned(11 downto 0);
 signal vga_Y : unsigned(11 downto 0);
 
+signal testpattern : std_logic_vector(1 downto 0);
+
 begin
 
 vgamaster : entity work.video_vga_master
@@ -93,6 +97,39 @@ vgamaster : entity work.video_vga_master
 		ySyncFr => X"1F4",
 		ySyncTo => X"1F6"
 	);
+	
+testpattern<=sw;
 
+process(clk,vga_X,vga_Y)
+begin
+	if rising_edge(clk) then
+		if vga_Y<X"1E0" and vga_X<X"280" then
+			case testpattern is
+				when "00" =>
+					VGA_R<=std_logic_vector(vga_X(7 downto 0));
+					VGA_G<=std_logic_vector(vga_Y(7 downto 0));
+					VGA_B<=vga_X(3)&vga_Y(3)&vga_X(2)&vga_Y(2)&vga_X(1)&vga_Y(1)&vga_X(0)&vga_Y(0);
+				when "01" =>
+					VGA_R<=std_logic_vector(not vga_X(7 downto 0));
+					VGA_G<=std_logic_vector(vga_Y(7 downto 0));
+					VGA_B<=not (vga_X(3)&vga_Y(3)&vga_X(2)&vga_Y(2)&vga_X(1)&vga_Y(1)&vga_X(0)&vga_Y(0));
+				when "10" =>
+					VGA_R<=std_logic_vector(vga_X(7 downto 0));
+					VGA_G<=std_logic_vector(not vga_Y(7 downto 0));
+					VGA_B<=vga_X(3)&vga_Y(3)&vga_X(2)&vga_Y(2)&vga_X(1)&vga_Y(1)&vga_X(0)&vga_Y(0);
+				when "11" =>
+					VGA_R<=std_logic_vector(not vga_X(7 downto 0));
+					VGA_G<=std_logic_vector(not vga_Y(7 downto 0));
+					VGA_B<=not (vga_X(3)&vga_Y(3)&vga_X(2)&vga_Y(2)&vga_X(1)&vga_Y(1)&vga_X(0)&vga_Y(0));
+				when others =>
+					null;
+			end case;
+		else
+			VGA_R<=X"00";
+			VGA_G<=X"00";
+			VGA_B<=X"00";
+		end if;
+	end if;
+end process;
 	
 end rtl;
