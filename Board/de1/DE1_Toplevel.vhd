@@ -195,8 +195,6 @@ virtualtoplevel : entity work.Virtual_Toplevel
 	port map(
 		reset => KEY(0),
 		CLK => sysclk,
-		
-		sw => sw(1 downto 0),
 
     -- SDRAM DE1 ports
 --	 pMemClk => DRAM_CLK,

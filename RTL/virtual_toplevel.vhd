@@ -15,8 +15,6 @@ entity Virtual_Toplevel is
 	port(
 		reset : in std_logic;
 		CLK : in std_logic;
-
-		sw : in std_logic_vector(1 downto 0) := "00";
 		
 		DRAM_ADDR	: out std_logic_vector(rowAddrBits-1 downto 0);
 		DRAM_BA_0	: out std_logic;
@@ -68,9 +66,25 @@ signal eoframe : std_logic;
 signal vga_X : unsigned(11 downto 0);
 signal vga_Y : unsigned(11 downto 0);
 
+
+-- Internal video signals:
+signal vga_red_i : std_logic_vector(7 downto 0);
+signal vga_green_i : std_logic_vector(7 downto 0);
+signal vga_blue_i	: std_logic_vector(7 downto 0);		
+signal vga_vsync_i : std_logic;
+signal vga_hsync_i : std_logic;
+
+signal osd_window : std_logic;
+signal osd_pixel : std_logic;
+
 signal testpattern : std_logic_vector(1 downto 0);
 
 begin
+
+
+spi_cs<='1';
+spi_clk<='0';
+spi_mosi<='1';
 
 
 -- Control module
@@ -80,6 +94,12 @@ MyCtrlModule : entity work.CtrlModule
 		clk => CLK,
 		reset_n => reset,
 
+		-- Video signals for OSD
+		vga_hsync => vga_hsync_i,
+		vga_vsync => vga_vsync_i,
+		osd_window => osd_window,
+		osd_pixel => osd_pixel,
+		
 		-- DIP switches
 		dipswitches(1 downto 0) => testpattern -- Replaces previous binding from the physical DIP switches
 	);
@@ -94,8 +114,8 @@ vgamaster : entity work.video_vga_master
 		clkDiv => X"3", -- 100Mhz / (3+1) = 25 MHz dot clock
 
 -- Sync outputs
-		hSync => vga_HS,
-		vSync => vga_VS,
+		hSync => vga_hsync_i, -- Now internal signals
+		vSync => vga_vsync_i,
 
 -- Control outputs
 		endOfPixel => eopixel,
@@ -117,32 +137,59 @@ process(clk,vga_X,vga_Y)
 begin
 	if rising_edge(clk) then
 		if vga_Y<X"1E0" and vga_X<X"280" then
+			-- Instead of sending the test pattern directly to VGA_[R|G|B] we now write it
+			-- to internal signals which are merged with the OSD.
 			case testpattern is
 				when "00" =>
-					VGA_R<=std_logic_vector(vga_X(7 downto 0));
-					VGA_G<=std_logic_vector(vga_Y(7 downto 0));
-					VGA_B<=vga_X(3)&vga_Y(3)&vga_X(2)&vga_Y(2)&vga_X(1)&vga_Y(1)&vga_X(0)&vga_Y(0);
+					vga_red_i<=std_logic_vector(vga_X(7 downto 0));
+					vga_green_i<=std_logic_vector(vga_Y(7 downto 0));
+					vga_blue_i<=vga_X(3)&vga_Y(3)&vga_X(2)&vga_Y(2)&vga_X(1)&vga_Y(1)&vga_X(0)&vga_Y(0);
 				when "01" =>
-					VGA_R<=std_logic_vector(not vga_X(7 downto 0));
-					VGA_G<=std_logic_vector(vga_Y(7 downto 0));
-					VGA_B<=not (vga_X(3)&vga_Y(3)&vga_X(2)&vga_Y(2)&vga_X(1)&vga_Y(1)&vga_X(0)&vga_Y(0));
+					vga_red_i<=std_logic_vector(not vga_X(7 downto 0));
+					vga_green_i<=std_logic_vector(vga_Y(7 downto 0));
+					vga_blue_i<=not (vga_X(3)&vga_Y(3)&vga_X(2)&vga_Y(2)&vga_X(1)&vga_Y(1)&vga_X(0)&vga_Y(0));
 				when "10" =>
-					VGA_R<=std_logic_vector(vga_X(7 downto 0));
-					VGA_G<=std_logic_vector(not vga_Y(7 downto 0));
-					VGA_B<=vga_X(3)&vga_Y(3)&vga_X(2)&vga_Y(2)&vga_X(1)&vga_Y(1)&vga_X(0)&vga_Y(0);
+					vga_red_i<=std_logic_vector(vga_X(7 downto 0));
+					vga_green_i<=std_logic_vector(not vga_Y(7 downto 0));
+					vga_blue_i<=vga_X(3)&vga_Y(3)&vga_X(2)&vga_Y(2)&vga_X(1)&vga_Y(1)&vga_X(0)&vga_Y(0);
 				when "11" =>
-					VGA_R<=std_logic_vector(not vga_X(7 downto 0));
-					VGA_G<=std_logic_vector(not vga_Y(7 downto 0));
-					VGA_B<=not (vga_X(3)&vga_Y(3)&vga_X(2)&vga_Y(2)&vga_X(1)&vga_Y(1)&vga_X(0)&vga_Y(0));
+					vga_red_i<=std_logic_vector(not vga_X(7 downto 0));
+					vga_green_i<=std_logic_vector(not vga_Y(7 downto 0));
+					vga_blue_i<=not (vga_X(3)&vga_Y(3)&vga_X(2)&vga_Y(2)&vga_X(1)&vga_Y(1)&vga_X(0)&vga_Y(0));
 				when others =>
 					null;
 			end case;
 		else
-			VGA_R<=X"00";
-			VGA_G<=X"00";
-			VGA_B<=X"00";
+			vga_red_i<=X"00";
+			vga_green_i<=X"00";
+			vga_blue_i<=X"00";
 		end if;
 	end if;
 end process;
-	
+
+
+-- Merge the host's VGA output and the OSD output:
+
+overlay : entity work.OSD_Overlay
+	port map
+	(
+		clk => CLK,
+		red_in => vga_red_i,
+		green_in => vga_green_i,
+		blue_in => vga_blue_i,
+		window_in => '1',
+		osd_window_in => osd_window,
+		osd_pixel_in => osd_pixel,
+		hsync_in => vga_hsync_i,
+		red_out => VGA_R,
+		green_out => VGA_G,
+		blue_out => VGA_B,
+		window_out => open,
+		scanline_ena => '0'
+	);
+
+VGA_HS <= vga_hsync_i;
+VGA_VS <= vga_vsync_i;
+
+
 end rtl;

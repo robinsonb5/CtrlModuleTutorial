@@ -257,7 +257,7 @@ end process;
 
 charram_rdaddr <= std_logic_vector(ypixelpos(6 downto 3))&std_logic_vector(xpixelpos(7 downto 3));
 
-charram : entity Work.DualPortRAM_2Read_Unreg
+charram : entity Work.DualPortRAM_2RW_1Clock_Unreg
 	generic map
 		(
 			AddrBits => 9,

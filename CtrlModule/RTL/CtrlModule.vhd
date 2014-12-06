@@ -13,6 +13,12 @@ entity CtrlModule is
 		clk 			: in std_logic;
 		reset_n 	: in std_logic;
 
+		-- Video signals for OSD
+		vga_hsync : in std_logic;
+		vga_vsync : in std_logic;
+		osd_window : out std_logic;
+		osd_pixel : out std_logic;
+
 		-- DIP switches
 		dipswitches : out std_logic_vector(15 downto 0)
 	);
@@ -34,6 +40,11 @@ signal mem_bEnable      : std_logic;
 signal zpu_to_rom : ZPU_ToROM;
 signal zpu_from_rom : ZPU_FromROM;
 
+-- OSD related signals
+signal osd_wr : std_logic;
+signal osd_charwr : std_logic;
+signal osd_char_q : std_logic_vector(7 downto 0);
+signal osd_data : std_logic_vector(15 downto 0);
 
 begin
 
@@ -84,6 +95,28 @@ begin
 		to_rom => zpu_to_rom
 	);
 
+
+-- OSD
+
+myosd : entity work.OnScreenDisplay
+port map(
+	reset_n => reset_n,
+	clk => clk,
+	-- Video
+	hsync_n => vga_hsync,
+	vsync_n => vga_vsync,
+	pixel => osd_pixel,
+	window => osd_window,
+	-- Registers
+	addr => mem_addr(8 downto 0),	-- low 9 bits of address
+	data_in => mem_write(15 downto 0),
+	data_out => osd_data(15 downto 0),
+	reg_wr => osd_wr,			-- Trigger a write to the control registers
+	char_wr => osd_charwr,	-- Trigger a write to the character RAM
+	char_q => osd_char_q		-- Data from the character RAM
+);
+
+
 	
 process(clk)
 begin
@@ -91,10 +124,21 @@ begin
 
 	elsif rising_edge(clk) then
 		mem_busy<='1';
+		osd_charwr<='0';
+		osd_wr<='0';
 		
 		-- Write from CPU?
 		if mem_writeEnable='1' then
 			case mem_addr(maxAddrBit)&mem_addr(10 downto 8) is
+				when X"B" =>	-- OSD controller at 0xFFFFFB00
+					osd_wr<='1';
+					mem_busy<='0';
+				when X"C" =>	-- OSD controller at 0xFFFFFC00 & 0xFFFFFD00
+					osd_charwr<='1';
+					mem_busy<='0';
+				when X"D" =>	-- OSD controller at 0xFFFFFC00 & 0xFFFFFD00
+					osd_charwr<='1';
+					mem_busy<='0';
 				when X"F" =>	-- Peripherals at 0xFFFFFF00
 					case mem_addr(7 downto 0) is							
 						when X"FC" => -- Host SW
@@ -112,6 +156,18 @@ begin
 		-- Read from CPU?
 		elsif mem_readEnable='1' then
 			case mem_addr(maxAddrBit)&mem_addr(10 downto 8) is
+				when X"B" =>	-- OSD registers
+					mem_read(31 downto 16)<=(others => '0');
+					mem_read(15 downto 0)<=osd_data;
+					mem_busy<='0';
+				when X"C" =>	-- OSD controller at 0xFFFFFC00 & 0xFFFFFD00
+					mem_read(31 downto 8)<=(others => 'X');
+					mem_read(7 downto 0)<=osd_char_q;
+					mem_busy<='0';
+				when X"D" =>	-- OSD controller at 0xFFFFFC00 & 0xFFFFFD00
+					mem_read(31 downto 8)<=(others => 'X');
+					mem_read(7 downto 0)<=osd_char_q;
+					mem_busy<='0';
 				when X"F" =>	-- Peripherals
 					case mem_addr(7 downto 0) is
 						-- We don't have any readable registers yet.
