@@ -10,7 +10,6 @@
 
 
 #include "osd.h"
-#include "small_printf.h"
 
 int osd_cursory, osd_cursorx;
 
