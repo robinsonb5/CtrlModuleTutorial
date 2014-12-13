@@ -35,7 +35,7 @@ begin
 		end if;
 	end process;
 
-	process(clk)
+	process(clk, window_in, osd_window_in, osd_pixel_in,red_in, green_in, blue_in, scanline, scanline_ena)
 	begin
 	
 --		if rising_edge(clk) then

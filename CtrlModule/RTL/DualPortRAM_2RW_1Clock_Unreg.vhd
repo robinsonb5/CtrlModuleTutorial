@@ -30,7 +30,7 @@ shared variable ram : ram_type;
 
 begin
 
-process (clock)
+process (clock,address1,address2)
 begin
 	if (clock'event and clock = '1') then
 		if wren1='1' then
@@ -42,7 +42,7 @@ begin
 	end if;
 end process;
 
-process (clock)
+process (clock,address1,address2)
 begin
 	q1 <= ram(to_integer(unsigned(address1)));
 	q2 <= ram(to_integer(unsigned(address2)));

@@ -19,6 +19,10 @@ entity CtrlModule is
 		osd_window : out std_logic;
 		osd_pixel : out std_logic;
 
+		-- PS/2 keyboard
+		ps2k_clk_in : in std_logic := '1';
+		ps2k_dat_in : in std_logic := '1';
+		
 		-- DIP switches
 		dipswitches : out std_logic_vector(15 downto 0)
 	);
@@ -40,11 +44,34 @@ signal mem_bEnable      : std_logic;
 signal zpu_to_rom : ZPU_ToROM;
 signal zpu_from_rom : ZPU_FromROM;
 
+
 -- OSD related signals
+
 signal osd_wr : std_logic;
 signal osd_charwr : std_logic;
 signal osd_char_q : std_logic_vector(7 downto 0);
 signal osd_data : std_logic_vector(15 downto 0);
+signal vblank : std_logic;
+
+
+-- PS/2 related signals
+
+signal ps2_int : std_logic;
+
+signal kbdrecv : std_logic;
+signal kbdrecvreg : std_logic;
+signal kbdrecvbyte : std_logic_vector(10 downto 0);
+
+
+-- Interrupt signals
+
+constant int_max : integer := 2;
+signal int_triggers : std_logic_vector(int_max downto 0);
+signal int_status : std_logic_vector(int_max downto 0);
+signal int_ack : std_logic;
+signal int_req : std_logic;
+signal int_enabled : std_logic :='0'; -- Disabled by default
+
 
 begin
 
@@ -92,7 +119,8 @@ begin
 		out_mem_bEnable     => mem_bEnable,
 		out_mem_readEnable  => mem_readEnable,
 		from_rom => zpu_from_rom,
-		to_rom => zpu_to_rom
+		to_rom => zpu_to_rom,
+		interrupt => int_req
 	);
 
 
@@ -105,6 +133,7 @@ port map(
 	-- Video
 	hsync_n => vga_hsync,
 	vsync_n => vga_vsync,
+	vblank => vblank,
 	pixel => osd_pixel,
 	window => osd_window,
 	-- Registers
@@ -117,15 +146,60 @@ port map(
 );
 
 
+-- PS2 keyboard
+mykeyboard : entity work.io_ps2_com
+generic map (
+	clockFilter => 15,
+	ticksPerUsec => sysclk_frequency/10
+)
+port map (
+	clk => clk,
+	reset => not reset_n, -- active high!
+	ps2_clk_in => ps2k_clk_in,
+	ps2_dat_in => ps2k_dat_in,
+--			ps2_clk_out => ps2k_clk_out, -- Receive only
+--			ps2_dat_out => ps2k_dat_out,
 	
-process(clk)
+	inIdle => open,
+	sendTrigger => '0',
+	sendByte => (others=>'X'),
+	sendBusy => open,
+	sendDone => open,
+	recvTrigger => kbdrecv,
+	recvByte => kbdrecvbyte
+);
+
+		
+-- Interrupt controller
+
+intcontroller: entity work.interrupt_controller
+generic map (
+	max_int => int_max
+)
+port map (
+	clk => clk,
+	reset_n => reset_n,
+	enable => int_enabled,
+	trigger => int_triggers,
+	ack => int_ack,
+	int => int_req,
+	status => int_status
+);
+
+int_triggers<=(0=>kbdrecv,
+					1=>vblank,
+					others => '0');
+	
+process(clk,reset_n)
 begin
 	if reset_n='0' then
-
+		int_enabled<='0';
+		kbdrecvreg <='0';
 	elsif rising_edge(clk) then
 		mem_busy<='1';
 		osd_charwr<='0';
 		osd_wr<='0';
+		int_ack<='0';
 		
 		-- Write from CPU?
 		if mem_writeEnable='1' then
@@ -139,8 +213,14 @@ begin
 				when X"D" =>	-- OSD controller at 0xFFFFFC00 & 0xFFFFFD00
 					osd_charwr<='1';
 					mem_busy<='0';
+
 				when X"F" =>	-- Peripherals at 0xFFFFFF00
-					case mem_addr(7 downto 0) is							
+					case mem_addr(7 downto 0) is
+
+						when X"B0" => -- Interrupts
+							int_enabled<=mem_write(0);
+							mem_busy<='0';
+					
 						when X"FC" => -- Host SW
 							mem_busy<='0';
 							dipswitches<=mem_write(15 downto 0);
@@ -170,7 +250,19 @@ begin
 					mem_busy<='0';
 				when X"F" =>	-- Peripherals
 					case mem_addr(7 downto 0) is
-						-- We don't have any readable registers yet.
+					
+						when X"B0" => -- Read from Interrupt status register
+							mem_read<=(others=>'X');
+							mem_read(int_max downto 0)<=int_status;
+							int_ack<='1';
+							mem_busy<='0';
+							
+						when X"E0" =>	-- Read from PS/2 regs
+
+							mem_read<=(others =>'X');
+							mem_read(11 downto 0)<=kbdrecvreg & '1' & kbdrecvbyte(10 downto 1);
+							kbdrecvreg<='0';
+							mem_busy<='0';
 						when others =>
 							mem_busy<='0';
 							null;
@@ -179,6 +271,10 @@ begin
 				when others => -- SDRAM
 					mem_busy<='0';
 			end case;
+		end if;
+
+		if kbdrecv='1' then
+			kbdrecvreg <= '1'; -- remains high until cleared by a read
 		end if;
 		
 	end if; -- rising-edge(clk)

@@ -574,6 +574,10 @@ set_location_assignment PIN_U20 -to SD_DAT3
 set_global_assignment -name CYCLONEII_RESERVE_NCEO_AFTER_CONFIGURATION "USE AS REGULAR IO"
 set_global_assignment -name RESERVE_ASDO_AFTER_CONFIGURATION "USE AS REGULAR IO"
 
+set_global_assignment -name ENABLE_SIGNALTAP OFF
+set_global_assignment -name USE_SIGNALTAP_FILE stp1.stp
+set_global_assignment -name VHDL_FILE ../../CtrlModule/RTL/io_ps2_com.vhd
+set_global_assignment -name VHDL_FILE ../../CtrlModule/RTL/interrupt_controller.vhd
 set_global_assignment -name VHDL_FILE ../../CtrlModule/Firmware/CtrlROM_ROM.vhd
 set_global_assignment -name SDC_FILE ../../Board/de1/de1.sdc
 set_global_assignment -name VHDL_FILE ../../Board/de1/DE1_Toplevel.vhd
@@ -589,8 +593,6 @@ set_global_assignment -name VHDL_FILE ../../CtrlModule/RTL/OSD_Overlay.vhd
 set_global_assignment -name VHDL_FILE ../../CtrlModule/RTL/DualPortRAM_2RW_1Clock.vhd
 set_global_assignment -name VHDL_FILE ../../CtrlModule/CharROM/CharROM_ROM.vhd
 set_global_assignment -name VHDL_FILE ../../CtrlModule/RTL/DualPortRAM_2RW_1Clock_Unreg.vhd
-set_global_assignment -name ENABLE_SIGNALTAP OFF
-set_global_assignment -name USE_SIGNALTAP_FILE stp1.stp
 set_global_assignment -name SIGNALTAP_FILE stp1.stp
 set_global_assignment -name SLD_FILE /home/amr/FPGA/Projects/CtrlModuleTutorial/fpga/de1/stp1_auto_stripped.stp
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

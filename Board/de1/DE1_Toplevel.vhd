@@ -262,6 +262,20 @@ virtualtoplevel : entity work.Virtual_Toplevel
 			oBlue => VGA_B
 		);
 
+HEX0<=(others => '1');
+HEX1<=(others => '1');
+HEX2<=(others => '1');
+HEX3<=(others => '1');
+LEDR<=(others => '0');
+LEDG<=(others => '0');
+
+FL_ADDR<=(others => 'X');
+FL_WE_N<='1';
+FL_OE_N<='1';
+FL_CE_N<='1';
+SRAM_CE_N<='1';
+SRAM_OE_N<='1';
+
 --hex<=X"0000";
 -- Hex display		
 --	U34: seg7_lut_4

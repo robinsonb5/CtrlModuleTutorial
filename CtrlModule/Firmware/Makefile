@@ -32,7 +32,7 @@ HW_OBJ = $(COMMON_OBJ) $(patsubst %.c,$(BUILD_DIR)/%.hwo,$(HW_SRC))
 # Regular C files
 
 MAIN_PRJ = CtrlROM
-MAIN_SRC = main.c
+MAIN_SRC = main.c ps2.c keyboard.c interrupts.c
 MAIN_OBJ = $(HW_OBJ) $(patsubst %.c,$(BUILD_DIR)/%.o,$(MAIN_SRC))
 
 LINKMAP  = $(ZPUFLEXDIR)/Firmware/standalone_simple.ld

@@ -81,6 +81,12 @@ signal testpattern : std_logic_vector(1 downto 0);
 
 begin
 
+ps2k_clk_out<='1';	-- Since the Control module only receives keyboard data
+ps2k_dat_out<='1';	-- we need to make sure the CLK and Data lines are high Z.
+
+DRAM_CS_N <='1';
+DRAM_RAS_N <='1';
+DRAM_CAS_N <='1';
 
 spi_cs<='1';
 spi_clk<='0';
@@ -99,6 +105,12 @@ MyCtrlModule : entity work.CtrlModule
 		vga_vsync => vga_vsync_i,
 		osd_window => osd_window,
 		osd_pixel => osd_pixel,
+
+		-- PS2 keyboard
+		ps2k_clk_in => ps2k_clk_in,
+		ps2k_dat_in => ps2k_dat_in,
+		
+		-- We leave the mouse disconnected for now
 		
 		-- DIP switches
 		dipswitches(1 downto 0) => testpattern -- Replaces previous binding from the physical DIP switches

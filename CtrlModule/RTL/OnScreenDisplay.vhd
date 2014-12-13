@@ -24,6 +24,7 @@ port(
 	-- Video
 	hsync_n : in std_logic;
 	vsync_n : in std_logic;
+	vblank : out std_logic;
 	enabled : out std_logic;
 	pixel : out std_logic;
 	window : out std_logic;
@@ -123,6 +124,7 @@ process(clk,hsync_n)
 begin
 	if rising_edge(clk) then
 		newframe<='0';
+		vblank<='0';
 		if newline='1' then
 			vsync_p<=vsync_n;
 			vcounter<=vcounter+1;
@@ -131,12 +133,14 @@ begin
 					vframe(15 downto 8)<=std_logic_vector(vcounter(10 downto 3));
 					vcounter<=(others => '0'); -- Reset counter
 					newframe<=vsync_pol;
+					vblank<=not vsync_pol;
 				end if;
 			else
 				if vsync_p='1' then -- falling edge?
 					vframe(7 downto 0)<=std_logic_vector(vcounter(10 downto 3));
 					vcounter<=(others => '0'); -- Reset counter
 					newframe<=not vsync_pol;
+					vblank<=vsync_pol;
 				end if;		
 			end if;
 		end if;
@@ -160,7 +164,7 @@ begin
 end process;
 
 
-process(clk,addr,data_in,hframe,vframe)
+process(clk,reset_n,addr,data_in,hframe,vframe)
 begin
 
 	if reset_n='0' then
@@ -215,7 +219,7 @@ vactive<='1' when ypixelpos(11 downto 7)="00000" else '0';
 -- Enable hactive for xpixel positions between 0 and 255, inclusive.
 hactive<='1' when xpixelpos(11 downto 8)="0000" else '0';
 
-process(clk)
+process(clk,osd_enable,hwindowactive,vwindowactive)
 begin
 
 	window<=osd_enable and hwindowactive and vwindowactive;
