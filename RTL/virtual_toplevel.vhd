@@ -81,6 +81,8 @@ signal testpattern : std_logic_vector(1 downto 0);
 
 begin
 
+RS232_TXD<='1';
+
 ps2k_clk_out<='1';	-- Since the Control module only receives keyboard data
 ps2k_dat_out<='1';	-- we need to make sure the CLK and Data lines are high Z.
 
@@ -113,6 +115,7 @@ MyCtrlModule : entity work.CtrlModule
 		-- We leave the mouse disconnected for now
 		
 		-- DIP switches
+		dipswitches(15 downto 2) => open,
 		dipswitches(1 downto 0) => testpattern -- Replaces previous binding from the physical DIP switches
 	);
 
