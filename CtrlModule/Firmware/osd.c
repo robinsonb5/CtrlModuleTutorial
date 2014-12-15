@@ -1,12 +1,5 @@
-// NOTE: this file is compiled using different compiler flags from the rest of the project.
-// The ROM itself only supports 32-bit accesses, so when accessing byte or halfword
-// variables within the ROM we need to use the -mnoshortop -mnobyteop compiler flags,
-// so that the compiler emits the requisite code to read, mask and shift data as required.
-
-// The routines in this file, however, are written to perform byte-oriented accesses within
-// the external character RAM, so this file must be compiled without the -mnoshortop -mnobyteop
-// flags.  One consequence of this is that a puts() function won't work if compiled
-// within this file.
+// This file must be compiled without the -mnoshortop -mnobyteop flags, since it
+// performs byte-oriented accesses to the Character RAM.
 
 
 #include "osd.h"
@@ -42,6 +35,15 @@ void OSD_Scroll()
 	}
 	for(i=0;i<32;++i)
 		*p1++=' ';
+}
+
+
+int OSD_Puts(char *str)
+{
+	int c;
+	while((c=*str++))
+		OSD_Putchar(c);
+	return(1);
 }
 
 

@@ -5,15 +5,6 @@
 #include "ps2.h"
 
 
-int osd_puts(char *str)
-{
-	int c;
-	while((c=*str++))
-		OSD_Putchar(c);
-	return(1);
-}
-
-
 int main(int argc,char **argv)
 {
 	int dipsw=0;
@@ -21,8 +12,8 @@ int main(int argc,char **argv)
 	PS2Init();
 	EnableInterrupts();
 	OSD_Clear();
-	osd_puts("Press F1-F4 to change pattern\n");
-	osd_puts("Press F12 to show/hide the OSD\n");
+	OSD_Puts("Press F1-F4 to change pattern\n");
+	OSD_Puts("Press F12 to show/hide the OSD\n");
 	while(1)
 	{
 		HandlePS2RawCodes();
