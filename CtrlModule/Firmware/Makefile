@@ -22,11 +22,18 @@ MINSTARTUP_SRC = $(STARTUP_DIR)/mincrt0.s $(STARTUP_DIR)/premain.s
 MINSTARTUP_OBJ = $(patsubst $(STARTUP_DIR)/%.s,$(BUILD_DIR)/%.o,$(MINSTARTUP_SRC))
 
 
-# C source files
+# We need to use different compilation options for OSD.c.  Most of the code is compiled with
+# -mnoshortop -mnobyteop to avoid our hardware having to deal with 8- or 16-bit memory accesses.
+# However, the character ROM is 8-bit oriented, so we need to use byte ops when compiling
+# osd.c
+HW_SRC = osd.c
+HW_OBJ = $(COMMON_OBJ) $(patsubst %.c,$(BUILD_DIR)/%.hwo,$(HW_SRC))
+
+# Regular C files
 
 MAIN_PRJ = CtrlROM
-MAIN_SRC = main.c ps2.c keyboard.c interrupts.c osd.c
-MAIN_OBJ = $(patsubst %.c,$(BUILD_DIR)/%.o,$(MAIN_SRC))
+MAIN_SRC = main.c interrupts.c keyboard.c ps2.c
+MAIN_OBJ = $(HW_OBJ) $(patsubst %.c,$(BUILD_DIR)/%.o,$(MAIN_SRC))
 
 LINKMAP  = $(ZPUFLEXDIR)/Firmware/standalone_simple.ld
 
@@ -35,9 +42,12 @@ LINKMAP  = $(ZPUFLEXDIR)/Firmware/standalone_simple.ld
 
 # Instruct GCC not to emit instructions that we're neither implementing nor emulating.
 # (N.B. No-neg requires bugfixed toolchain)
-ZPUOPTS= -mno-poppcrel -mno-pushspadd -mno-callpcrel -mno-neg -mno-div -mno-mod
+ZPUOPTS= -mno-poppcrel -mno-pushspadd -mno-callpcrel -mno-shortop -mno-byteop -mno-neg -mno-div -mno-mod
+
+HWZPUOPTS= -mno-poppcrel -mno-pushspadd -mno-callpcrel -mno-neg -mno-div -mno-mod
 
 CFLAGS  = -I. -I$(COMMON_DIR)/ -g -c -Os $(ZPUOPTS) -ffunction-sections -fdata-sections $(FWOPTS)
+HWCFLAGS  = -I. -I$(COMMON_DIR)/ -g -c -Os $(HWZPUOPTS) -ffunction-sections -fdata-sections $(FWOPTS)
 LFLAGS  = -nostartfiles -nostdlib -Wl,--relax -Wl,--gc-sections -Os -g
 LIBS = -lgcc
 
@@ -77,6 +87,9 @@ $(MAIN_PRJ).elf: $(MINSTARTUP_OBJ) $(MAIN_OBJ)
 
 $(BUILD_DIR)/%.o: %.c Makefile
 	$(CC) $(CFLAGS)  -o $@ -c $<
+
+$(BUILD_DIR)/%.hwo: %.c Makefile
+	$(CC) $(HWCFLAGS)  -o $@ -c $<
 
 $(BUILD_DIR)/%.o: $(COMMON_DIR)/%.c Makefile
 	$(CC) $(CFLAGS)  -o $@ -c $<

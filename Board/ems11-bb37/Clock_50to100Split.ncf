@@ -1,4 +1,4 @@
-# file: Clock_50to100Split_exdes.ucf
+# file: Clock_50to100Split.ucf
 # 
 # (c) Copyright 2008 - 2011 Xilinx, Inc. All rights reserved.
 # 
@@ -67,7 +67,6 @@ TIMESPEC "TS_CLK_IN1" = PERIOD "CLK_IN1" 20.000 ns HIGH 50% INPUT_JITTER 200.0ps
 # TIMESPEC "TS_CLK_OUT3" = PERIOD "CLK_OUT3" 100.000 MHz;
 
 # FALSE PATH constraints 
-PIN "COUNTER_RESET" TIG;
 PIN "RESET" TIG;
 
 

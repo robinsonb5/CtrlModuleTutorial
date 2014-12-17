@@ -11,5 +11,8 @@
 <msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;/home/amr/FPGA/Projects/CtrlModuleTutorial/Board/ems11-bb37/Clock_50to100Split.vhd&quot; into library work</arg>
 </msg>
 
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;/home/amr/FPGA/Projects/CtrlModuleTutorial/Board/ems11-bb37/Clock_50to100Split/example_design/Clock_50to100Split_exdes.vhd&quot; into library work</arg>
+</msg>
+
 </messages>
 

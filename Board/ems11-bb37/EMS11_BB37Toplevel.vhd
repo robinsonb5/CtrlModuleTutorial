@@ -86,9 +86,9 @@ signal sysclk_inv : std_logic;
 signal clklocked : std_logic;
 signal sysclk_slow : std_logic;
 
-signal vga_red : unsigned(7 downto 0);
-signal vga_green : unsigned(7 downto 0);
-signal vga_blue : unsigned(7 downto 0);
+signal vga_red : std_logic_vector(7 downto 0);
+signal vga_green : std_logic_vector(7 downto 0);
+signal vga_blue : std_logic_vector(7 downto 0);
 signal vga_hsync : std_logic;
 signal vga_vsync : std_logic;
 signal vga_window : std_logic;
@@ -118,11 +118,31 @@ signal ps2k_clk_out : std_logic;
 signal ps2k_dat_in : std_logic;
 signal ps2k_dat_out : std_logic;
 
+signal reset_s : std_logic;
+
 begin
 UART1_RTS_N<='1';  -- safe default since we're not using handshaking.
 
+DR_CAS_N <='1';
+DR_CS_N <='1';
+DR_RAS_N <='1';
+DR_WE_N <='1';
+DR_CKE <='1';
+DR_A <=(others=>'1');
+DR_DQMH <='1';
+DR_DQML <='1';
+DR_BA <=(others =>'1');
+
+
 -- DR_CLK_O<='1';
-LED1 <= RESET_N;
+process(sysclk)
+	begin
+	if rising_edge(sysclk) then
+		reset_s <= RESET_N;
+	end if;
+end process;
+
+LED1 <= reset_s;
 LED2 <= DIAG_N;
 
 ps2m_dat_in<=PS2_MDAT;
@@ -189,7 +209,7 @@ port map (
 
 -- vga_clock <= sysclk;
 vga_sync <= '0';
-vga_blank <= vga_window;
+vga_blank <= '1';
 vga_psave <= '1';
 
 -- M1_VGA_GREEN(9)<=vga_green(9);
@@ -238,41 +258,33 @@ M1_VGA_SYNC_N<=vga_sync;
 
 -- DR_A(12)<='0'; -- Temporary measure
 
-project: entity work.VirtualToplevel
-	generic map (
-		sdram_rows => 13,
-		sdram_cols => 10,
-		sysclk_frequency => 250, -- Sysclk frequency * 10
-		fastclk_frequency => 1000 -- Sysclk frequency * 10
-	)
+project: entity work.Virtual_Toplevel
 	port map (
-		clk => sysclk_slow,
-		clk_fast => sysclk,
-		reset_in => RESET_N,
+		clk => sysclk,
+		reset => reset_s,
 	
 		-- VGA
 		-- vga_red => vga_red(9 downto 2),
 		-- vga_green => vga_green(9 downto 2),
 		-- vga_blue => vga_blue(9 downto 2),
 
-		vga_red => vga_red,
-		vga_green => vga_green,
-		vga_blue => vga_blue,
-		vga_hsync => vga_hsync,
-		vga_vsync => vga_vsync,
-		vga_window => vga_window,
+		vga_r => vga_red,
+		vga_g => vga_green,
+		vga_b => vga_blue,
+		vga_hs => vga_hsync,
+		vga_vs => vga_vsync,
 
 		-- SDRAM
-		sdr_data => DR_D,
-		sdr_addr => DR_A(12 downto 0),
-		sdr_dqm(1) => DR_DQMH,
-		sdr_dqm(0) => DR_DQML,
-		sdr_we => DR_WE_N,
-		sdr_cas => DR_CAS_N,
-		sdr_ras => DR_RAS_N,
-		sdr_cs => DR_CS_N,
-		sdr_ba => DR_BA,
-		sdr_cke => DR_CKE,
+--		sdr_data => DR_D,
+--		sdr_addr => DR_A(12 downto 0),
+--		sdr_dqm(1) => DR_DQMH,
+--		sdr_dqm(0) => DR_DQML,
+--		sdr_we => DR_WE_N,
+--		sdr_cas => DR_CAS_N,
+--		sdr_ras => DR_RAS_N,
+--		sdr_cs => DR_CS_N,
+--		sdr_ba => DR_BA,
+--		sdr_cke => DR_CKE,
 
 		-- SD Card
 		spi_cs => FPGA_SD_D3,
@@ -285,17 +297,14 @@ project: entity work.VirtualToplevel
 		ps2k_dat_in => ps2k_dat_in,
 		ps2k_clk_out => ps2k_clk_out,
 		ps2k_dat_out => ps2k_dat_out,
-		ps2m_clk_in => ps2m_clk_in,
-		ps2m_dat_in => ps2m_dat_in,
-		ps2m_clk_out => ps2m_clk_out,
-		ps2m_dat_out => ps2m_dat_out,
+--		ps2m_clk_in => ps2m_clk_in,
+--		ps2m_dat_in => ps2m_dat_in,
+--		ps2m_clk_out => ps2m_clk_out,
+--		ps2m_dat_out => ps2m_dat_out,
 		
-		-- Emus GPIO
-		gpio_data => GPIO,
-
 		-- UART
-		rxd => UART1_RXD,
-		txd => UART1_TXD
+		rs232_rxd => UART1_RXD,
+		rs232_txd => UART1_TXD
 );
 
 end architecture;

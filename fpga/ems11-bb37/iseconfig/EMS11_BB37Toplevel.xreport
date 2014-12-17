@@ -1,9 +1,9 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <report-views version="2.0" >
  <header>
-  <DateModified>2014-12-14T23:43:54</DateModified>
+  <DateModified>2014-12-17T19:35:33</DateModified>
   <ModuleName>EMS11_BB37Toplevel</ModuleName>
-  <SummaryTimeStamp>2014-12-14T23:43:33</SummaryTimeStamp>
+  <SummaryTimeStamp>2014-12-17T19:31:41</SummaryTimeStamp>
   <SavedFilePath>/home/amr/FPGA/Projects/CtrlModuleTutorial/fpga/ems11-bb37/iseconfig/EMS11_BB37Toplevel.xreport</SavedFilePath>
   <ImplementationReportsDirectory>/home/amr/FPGA/Projects/CtrlModuleTutorial/fpga/ems11-bb37/</ImplementationReportsDirectory>
   <DateInitialized>2014-12-13T19:34:49</DateInitialized>

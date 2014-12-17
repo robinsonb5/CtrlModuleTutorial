@@ -15,23 +15,17 @@
   <version xil_pn:ise_version="14.3" xil_pn:schema_version="2"/>
 
   <files>
-    <file xil_pn:name="../../../../TG68MiniSOC/SOC/fpga/ems11-bb37/abb_tb.vhd" xil_pn:type="FILE_VHDL">
-      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="0"/>
-      <association xil_pn:name="PostMapSimulation" xil_pn:seqID="220"/>
-      <association xil_pn:name="PostRouteSimulation" xil_pn:seqID="220"/>
-      <association xil_pn:name="PostTranslateSimulation" xil_pn:seqID="220"/>
-    </file>
-    <file xil_pn:name="../../../../TG68MiniSOC/Board/ems11-bb30/EMS11_MIO_TEST_V0.0.ucf" xil_pn:type="FILE_UCF">
+    <file xil_pn:name="../../Board/ems11-bb37/EMS11_MIO_TEST_V0.0.ucf" xil_pn:type="FILE_UCF">
       <association xil_pn:name="Implementation" xil_pn:seqID="0"/>
     </file>
-    <file xil_pn:name="../../../../TG68MiniSOC/Board/ems11-bb37/EMS11_BB37Toplevel.vhd" xil_pn:type="FILE_VHDL">
+    <file xil_pn:name="../../Board/ems11-bb37/EMS11_BB37Toplevel.vhd" xil_pn:type="FILE_VHDL">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="101"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="14"/>
     </file>
-    <file xil_pn:name="../../../../TG68MiniSOC/Board/ems11-bb37/EMS11_BB37_base.ucf" xil_pn:type="FILE_UCF">
+    <file xil_pn:name="../../Board/ems11-bb37/EMS11_BB37_base.ucf" xil_pn:type="FILE_UCF">
       <association xil_pn:name="Implementation" xil_pn:seqID="0"/>
     </file>
-    <file xil_pn:name="../../../../TG68MiniSOC/Board/ems11-bb37/EMS11_BB37_sdram.ucf" xil_pn:type="FILE_UCF">
+    <file xil_pn:name="../../Board/ems11-bb37/EMS11_BB37_sdram.ucf" xil_pn:type="FILE_UCF">
       <association xil_pn:name="Implementation" xil_pn:seqID="0"/>
     </file>
     <file xil_pn:name="../../RTL/video_vga_master.vhd" xil_pn:type="FILE_VHDL">
@@ -218,7 +212,7 @@
     <property xil_pn:name="Ignore User Timing Constraints Map" xil_pn:value="false" xil_pn:valueState="default"/>
     <property xil_pn:name="Ignore User Timing Constraints Par" xil_pn:value="false" xil_pn:valueState="default"/>
     <property xil_pn:name="Implementation Top" xil_pn:value="Architecture|EMS11_BB37Toplevel|rtl" xil_pn:valueState="non-default"/>
-    <property xil_pn:name="Implementation Top File" xil_pn:value="../../../../TG68MiniSOC/Board/ems11-bb37/EMS11_BB37Toplevel.vhd" xil_pn:valueState="non-default"/>
+    <property xil_pn:name="Implementation Top File" xil_pn:value="../../Board/ems11-bb37/EMS11_BB37Toplevel.vhd" xil_pn:valueState="non-default"/>
     <property xil_pn:name="Implementation Top Instance Path" xil_pn:value="/EMS11_BB37Toplevel" xil_pn:valueState="non-default"/>
     <property xil_pn:name="Include 'uselib Directive in Verilog File" xil_pn:value="false" xil_pn:valueState="default"/>
     <property xil_pn:name="Include SIMPRIM Models in Verilog File" xil_pn:value="false" xil_pn:valueState="default"/>
@@ -371,7 +365,7 @@
     <property xil_pn:name="Specify Top Level Instance Names Post-Translate" xil_pn:value="Default" xil_pn:valueState="default"/>
     <property xil_pn:name="Speed Grade" xil_pn:value="-3" xil_pn:valueState="default"/>
     <property xil_pn:name="Starting Placer Cost Table (1-100) Map spartan6" xil_pn:value="1" xil_pn:valueState="default"/>
-    <property xil_pn:name="Synthesis Constraints File" xil_pn:value="../../../../TG68MiniSOC/Board/ems11-bb21/EMS11_BB21_clocks.xcf" xil_pn:valueState="non-default"/>
+    <property xil_pn:name="Synthesis Constraints File" xil_pn:value="../../Board/ems11-bb37/clocks.xcf" xil_pn:valueState="non-default"/>
     <property xil_pn:name="Synthesis Tool" xil_pn:value="XST (VHDL/Verilog)" xil_pn:valueState="default"/>
     <property xil_pn:name="Target Simulator" xil_pn:value="Please Specify" xil_pn:valueState="default"/>
     <property xil_pn:name="Timing Mode Map" xil_pn:value="Performance Evaluation" xil_pn:valueState="default"/>

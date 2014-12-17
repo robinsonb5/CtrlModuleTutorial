@@ -5,7 +5,6 @@
 # Part pkg:  BGA676
 # Created:   04.08.2014 20:00:20
 # Edited:	2014-08-06, by emu
-
 CONFIG VCCAUX=3.3;
 
 #
@@ -53,6 +52,6 @@ NET "DR_RAS_N" LOC = "AA22";
 NET "DR_WE_N" LOC = "AC23";
 
 
-NET DR_* IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST;
+NET DR_* IOSTANDARD = LVTTL |DRIVE = 8 |SLEW = FAST;
 NET DR_CLK_O BUFG = CLK;
 NET DR_D<*> NODELAY;

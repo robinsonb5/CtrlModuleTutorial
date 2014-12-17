@@ -38,15 +38,6 @@ void OSD_Scroll()
 }
 
 
-int OSD_Puts(char *str)
-{
-	int c;
-	while((c=*str++))
-		OSD_Putchar(c);
-	return(1);
-}
-
-
 void OSD_Putchar(int c)
 {
 	while(osd_cursory>14)

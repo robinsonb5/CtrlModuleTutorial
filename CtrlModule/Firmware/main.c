@@ -5,6 +5,15 @@
 #include "ps2.h"
 
 
+int OSD_Puts(char *str)
+{
+	int c;
+	while((c=*str++))
+		OSD_Putchar(c);
+	return(1);
+}
+
+
 int main(int argc,char **argv)
 {
 	int dipsw=0;

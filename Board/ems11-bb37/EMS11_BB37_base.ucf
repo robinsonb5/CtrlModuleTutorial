@@ -5,7 +5,6 @@
 # Part pkg:  BGA676
 # Created:   04.08.2014 20:00:20
 # Edited:	2014-08-06, by emu
-
 CONFIG VCCAUX=3.3;
 
 #
@@ -16,23 +15,21 @@ CONFIG VCCAUX=3.3;
 #	NET "clk" TNM_NET = "clk" | CLOCK_DEDICATED_ROUTE = FALSE;
 #	TIMESPEC "TS_clk" = PERIOD "clk" 10 ns HIGH 50 %;
 #
-NET "RESET_N" LOC = "B24" | IOSTANDARD = "LVTTL";
-NET "DIAG_N" LOC = "L17" | IOSTANDARD = "LVTTL";
+NET "RESET_N" LOC = "B24" |IOSTANDARD = "LVTTL";
+# NET "RESET_N" CLOCK_DEDICATED_ROUTE = FALSE;
+NET "DIAG_N" LOC = "L17" |IOSTANDARD = "LVTTL";
 
-NET "CLK50" LOC = "C13" | IOSTANDARD = "LVTTL";
+NET "CLK50" LOC = "C13" |IOSTANDARD = "LVTTL";
 
 # NET "100MHZ_N" LOC = "P22";
 # NET "100MHZ_P" LOC = "P21";
-
-NET "LED1" LOC = "L23"  | IOSTANDARD = "LVTTL" | DRIVE = 2; # 330R led to gnd 
-NET "LED2" LOC = "N22"  | IOSTANDARD = "LVTTL" | DRIVE = 2; # 330R led to gnd 
+NET "LED1" LOC = "L23"  |IOSTANDARD = "LVTTL" |DRIVE = 2; # 330R led to gnd 
+NET "LED2" LOC = "N22"  |IOSTANDARD = "LVTTL" |DRIVE = 2; # 330R led to gnd 
 # NET "FPGA_LED3" LOC = "AF24" | IOSTANDARD = "LVTTL" | DRIVE = 2; # 330R led to gnd 
-
 # NET "CDCE_CLK1" LOC = "N20";
 # NET "CDCE_CLK2" LOC = "M21";
 # NET "CDCE_SCLK" LOC = "K19";
 # NET "CDCE_SDATA" LOC = "K18";
-
 #
 #	UARTs & USB
 #
@@ -45,20 +42,16 @@ NET "UART1_TXD" LOC = "A6";
 # NET "UART2_RTS_N" LOC = "A8";
 # NET "UART2_RXD" LOC = "B8";
 # NET "UART2_TXD" LOC = "A7";
-
 # NET "USB_DM" LOC = "F26";
 # NET "USB_DP" LOC = "F24";
-
-NET UART* IOSTANDARD = LVTTL | DRIVE = 8 ;
+NET UART* IOSTANDARD = LVTTL |DRIVE = 8 ;
 # NET USB* IOSTANDARD = LVTTL | DRIVE = 8 ;
 #
 #	Audio
 #
 # NET "AUDIO_L" LOC = "C26";
 # NET "AUDIO_R" LOC = "B26";
-
 # NET AUDIO* IOSTANDARD = LVTTL | DRIVE = 8 ;
-
 #
 #	SDflash 1 & 2
 #
@@ -79,9 +72,7 @@ NET "FPGA_SD_*" IOSTANDARD = LVTTL;
 # NET "MCU_SD_D2" LOC = "E26";
 # NET "MCU_SD_D3" LOC = "E25";
 # NET "MCU_SD_SCLK" LOC = "B25";
-
 # NET "MCU_SD_*" IOSTANDARD = LVTTL;
-
 #
 #	EXPMOD1 & EXPMOD2
 #
@@ -102,12 +93,9 @@ NET "FPGA_SD_*" IOSTANDARD = LVTTL;
 # NET "EXPMOD2<7>" LOC = "U19";
 # NET "EXPMOD2<8>" LOC = "U22";
 # NET EXPMOD_* IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = SLOW;
-
-
 #
 #	Ethernet LAN8720 --------------------------------------------------------
 #
-
 # NET "RMII_#INT/REFCLKO" LOC = "L24";
 # NET "RMII_CRS_DV/MODE2" LOC = "G26";
 # NET "RMII_MDC" LOC = "K24";
@@ -117,13 +105,10 @@ NET "FPGA_SD_*" IOSTANDARD = LVTTL;
 # NET "RMII_TXD0" LOC = "M24";
 # NET "RMII_TXD1" LOC = "N23";
 # NET "RMII_TXEN" LOC = "M23";
-
 # NET "RMII_*" IOSTANDARD = LVTTL;
-
 #
 #	VGA, on ADV7511 3x8bit DAC, PS/2 Mouse & keyboard ----------------------------
 #
-
 NET "M1_VGA_BLANK_N" LOC = "A22";
 NET "M1_VGA_BLUE<0>" LOC = "A19";
 NET "M1_VGA_BLUE<1>" LOC = "C17";
@@ -160,12 +145,11 @@ NET "M1_VGA_RED<7>" LOC = "C19";
 NET "M1_VGA_SYNC_N" LOC = "C18";
 NET "M1_VGA_VSYNC" LOC = "B20";
 
-NET M1_* IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST;
+NET M1_* IOSTANDARD = LVTTL |DRIVE = 8 |SLEW = FAST;
 
 #
 #	Not used on QTE-Right ---------------------------------------------------
 #
-
 # NET "FU_23" LOC = "Y21";
 # NET "FU_24" LOC = "Y20";
 # NET "FU_25" LOC = "V19";
@@ -174,31 +158,24 @@ NET M1_* IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = FAST;
 #
 #	SDR SDRAM if used, is in ems11-bb37-sdram.ucf ------------------------------------------
 #
-
 #
 #	DDR3 SDRAM if used, is in ems11-bb37-ddr3.ucf ----------------------------------
 #
-
 #
 #	VG96 connector, please use the corresponding ems11-bb37-vg96.ucf file for the used module
 #
-
-
 #
 #	The usual remaining pins ;-) --------------------------------------------
 #
-
 # NET "FPGA_CCLK_INTERNAL" LOC = "AD22";
 # NET "FPGA_CSO" LOC = "AF4";
 # NET "FPGA_DONE" LOC = "AF23";
 # NET "FPGA_INIT" LOC = "AE4";
-
 # NET "FPGA_M0" LOC = "AF22";
 # NET "FPGA_M1" LOC = "AD16";
 # NET "FPGA_MISO_INTERNAL" LOC = "AD20";
 # NET "FPGA_MOSI" LOC = "AF20";
 # NET "FPGA_PROG" LOC = "AF3";
-
 # NET "FPGA_TCK" LOC = "E21";
 # NET "FPGA_TDI" LOC = "F20";
 # NET "FPGA_TDO" LOC = "A24";
