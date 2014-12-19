@@ -24,7 +24,12 @@ entity CtrlModule is
 		ps2k_dat_in : in std_logic := '1';
 		
 		-- DIP switches
-		dipswitches : out std_logic_vector(15 downto 0)
+		dipswitches : out std_logic_vector(15 downto 0);
+		
+		-- RGB scaling
+		scalered : out unsigned(4 downto 0);
+		scalegreen : out unsigned(4 downto 0);
+		scaleblue : out unsigned(4 downto 0)
 	);
 end entity;
 
@@ -221,7 +226,19 @@ begin
 						when X"B0" => -- Interrupts
 							int_enabled<=mem_write(0);
 							mem_busy<='0';
-					
+
+						when X"F0" => -- Scale Red
+							mem_busy<='0';
+							scalered<=unsigned(mem_write(4 downto 0));
+							
+						when X"F4" => -- Scale Green
+							mem_busy<='0';
+							scalegreen<=unsigned(mem_write(4 downto 0));
+							
+						when X"F8" => -- Scale Blue
+							mem_busy<='0';
+							scaleblue<=unsigned(mem_write(4 downto 0));
+							
 						when X"FC" => -- Host SW
 							mem_busy<='0';
 							dipswitches<=mem_write(15 downto 0);

@@ -68,9 +68,15 @@ signal vga_Y : unsigned(11 downto 0);
 
 
 -- Internal video signals:
-signal vga_red_i : std_logic_vector(7 downto 0);
-signal vga_green_i : std_logic_vector(7 downto 0);
-signal vga_blue_i	: std_logic_vector(7 downto 0);		
+signal vga_red_i : unsigned(7 downto 0);
+signal vga_green_i : unsigned(7 downto 0);
+signal vga_blue_i	: unsigned(7 downto 0);		
+signal vga_red_i_scaled : unsigned(12 downto 0);
+signal vga_green_i_scaled : unsigned(12 downto 0);
+signal vga_blue_i_scaled : unsigned(12 downto 0);
+signal scalered : unsigned(4 downto 0);
+signal scalegreen : unsigned(4 downto 0);
+signal scaleblue : unsigned(4 downto 0);
 signal vga_vsync_i : std_logic;
 signal vga_hsync_i : std_logic;
 
@@ -78,6 +84,7 @@ signal osd_window : std_logic;
 signal osd_pixel : std_logic;
 
 signal testpattern : std_logic_vector(1 downto 0);
+signal scanlines : std_logic;
 
 begin
 
@@ -115,8 +122,14 @@ MyCtrlModule : entity work.CtrlModule
 		-- We leave the mouse disconnected for now
 		
 		-- DIP switches
-		dipswitches(15 downto 2) => open,
-		dipswitches(1 downto 0) => testpattern -- Replaces previous binding from the physical DIP switches
+		dipswitches(15 downto 3) => open,
+		dipswitches(2) => scanlines,
+		dipswitches(1 downto 0) => testpattern, -- Replaces previous binding from the physical DIP switches
+		
+		-- RGB scaling
+		scalered => scalered,
+		scalegreen => scalegreen,
+		scaleblue => scaleblue
 	);
 
 
@@ -156,20 +169,20 @@ begin
 			-- to internal signals which are merged with the OSD.
 			case testpattern is
 				when "00" =>
-					vga_red_i<=std_logic_vector(vga_X(7 downto 0));
-					vga_green_i<=std_logic_vector(vga_Y(7 downto 0));
+					vga_red_i<=vga_X(7 downto 0);
+					vga_green_i<=vga_Y(7 downto 0);
 					vga_blue_i<=vga_X(3)&vga_Y(3)&vga_X(2)&vga_Y(2)&vga_X(1)&vga_Y(1)&vga_X(0)&vga_Y(0);
 				when "01" =>
-					vga_red_i<=std_logic_vector(not vga_X(7 downto 0));
-					vga_green_i<=std_logic_vector(vga_Y(7 downto 0));
+					vga_red_i<=not vga_X(7 downto 0);
+					vga_green_i<=vga_Y(7 downto 0);
 					vga_blue_i<=not (vga_X(3)&vga_Y(3)&vga_X(2)&vga_Y(2)&vga_X(1)&vga_Y(1)&vga_X(0)&vga_Y(0));
 				when "10" =>
-					vga_red_i<=std_logic_vector(vga_X(7 downto 0));
-					vga_green_i<=std_logic_vector(not vga_Y(7 downto 0));
+					vga_red_i<=vga_X(7 downto 0);
+					vga_green_i<=not vga_Y(7 downto 0);
 					vga_blue_i<=vga_X(3)&vga_Y(3)&vga_X(2)&vga_Y(2)&vga_X(1)&vga_Y(1)&vga_X(0)&vga_Y(0);
 				when "11" =>
-					vga_red_i<=std_logic_vector(not vga_X(7 downto 0));
-					vga_green_i<=std_logic_vector(not vga_Y(7 downto 0));
+					vga_red_i<=not vga_X(7 downto 0);
+					vga_green_i<=not vga_Y(7 downto 0);
 					vga_blue_i<=not (vga_X(3)&vga_Y(3)&vga_X(2)&vga_Y(2)&vga_X(1)&vga_Y(1)&vga_X(0)&vga_Y(0));
 				when others =>
 					null;
@@ -183,15 +196,21 @@ begin
 end process;
 
 
+-- Scale according to the RGB scale values;
+vga_red_i_scaled<=scalered * vga_red_i;
+vga_green_i_scaled<=scalegreen * vga_green_i;
+vga_blue_i_scaled<=scaleblue * vga_blue_i;
+
+
 -- Merge the host's VGA output and the OSD output:
 
 overlay : entity work.OSD_Overlay
 	port map
 	(
 		clk => CLK,
-		red_in => vga_red_i,
-		green_in => vga_green_i,
-		blue_in => vga_blue_i,
+		red_in => std_logic_vector(vga_red_i_scaled(11 downto 4)),
+		green_in => std_logic_vector(vga_green_i_scaled(11 downto 4)),
+		blue_in => std_logic_vector(vga_blue_i_scaled(11 downto 4)),
 		window_in => '1',
 		osd_window_in => osd_window,
 		osd_pixel_in => osd_pixel,
@@ -200,7 +219,7 @@ overlay : entity work.OSD_Overlay
 		green_out => VGA_G,
 		blue_out => VGA_B,
 		window_out => open,
-		scanline_ena => '0'
+		scanline_ena => scanlines
 	);
 
 VGA_HS <= vga_hsync_i;
