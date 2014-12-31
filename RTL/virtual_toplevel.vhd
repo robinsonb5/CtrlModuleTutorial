@@ -1,5 +1,3 @@
-library STD;
-use STD.TEXTIO.ALL;
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.STD_LOGIC_TEXTIO.all;
@@ -60,20 +58,13 @@ end entity;
 
 architecture rtl of Virtual_Toplevel is
 
-signal eopixel : std_logic;
-signal eoline : std_logic;
-signal eoframe : std_logic;
-signal vga_X : unsigned(11 downto 0);
-signal vga_Y : unsigned(11 downto 0);
-
+signal ps2k_divert : std_logic;
+signal spi_divert : std_logic;
 
 -- Internal video signals:
-signal vga_red_i : unsigned(7 downto 0);
-signal vga_green_i : unsigned(7 downto 0);
-signal vga_blue_i	: unsigned(7 downto 0);		
-signal vga_red_i_scaled : unsigned(12 downto 0);
-signal vga_green_i_scaled : unsigned(12 downto 0);
-signal vga_blue_i_scaled : unsigned(12 downto 0);
+signal vga_red_i : std_logic_vector(7 downto 0);
+signal vga_green_i : std_logic_vector(7 downto 0);
+signal vga_blue_i	: std_logic_vector(7 downto 0);		
 signal scalered : unsigned(4 downto 0);
 signal scalegreen : unsigned(4 downto 0);
 signal scaleblue : unsigned(4 downto 0);
@@ -90,16 +81,9 @@ begin
 
 RS232_TXD<='1';
 
-ps2k_clk_out<='1';	-- Since the Control module only receives keyboard data
-ps2k_dat_out<='1';	-- we need to make sure the CLK and Data lines are high Z.
-
 DRAM_CS_N <='1';
 DRAM_RAS_N <='1';
 DRAM_CAS_N <='1';
-
-spi_cs<='1';
-spi_clk<='0';
-spi_mosi<='1';
 
 
 -- Control module
@@ -118,6 +102,14 @@ MyCtrlModule : entity work.CtrlModule
 		-- PS2 keyboard
 		ps2k_clk_in => ps2k_clk_in,
 		ps2k_dat_in => ps2k_dat_in,
+--		ps2k_divert => ps2k_divert,
+
+		-- SD card signals
+--		spi_clk => spi_clk,
+--		spi_mosi => spi_mosi,
+--		spi_miso => spi_miso,
+--		spi_cs => spi_cs,
+--		spi_divert => spi_divert,
 		
 		-- We leave the mouse disconnected for now
 		
@@ -135,72 +127,33 @@ MyCtrlModule : entity work.CtrlModule
 
 -- The core proper
 
-vgamaster : entity work.video_vga_master
-	port map (
--- System
+myhostcore : entity work.HostCore
+	port map(
+		reset => reset,
 		clk => clk,
-		clkDiv => X"3", -- 100Mhz / (3+1) = 25 MHz dot clock
+		
+		vga_r	=> vga_red_i,
+		vga_g	=> vga_green_i,
+		vga_b => vga_blue_i,
+		vga_hs => vga_hsync_i,
+		vga_vs => vga_vsync_i,
 
--- Sync outputs
-		hSync => vga_hsync_i, -- Now internal signals
-		vSync => vga_vsync_i,
-
--- Control outputs
-		endOfPixel => eopixel,
-		endOfLine => eoline,
-		endOfFrame => eoframe,
-		currentX => vga_X,
-		currentY => vga_Y,
-
--- Configuration
-		xSize => X"320",
-		ySize => X"20D",
-		xSyncFr => X"290",
-		xSyncTo => X"2F0",
-		ySyncFr => X"1F4",
-		ySyncTo => X"1F6"
+		ps2k_clk_out => ps2k_clk_out,
+		ps2k_dat_out => ps2k_dat_out,
+		ps2k_clk_in => ps2k_clk_in,
+		ps2k_dat_in => ps2k_dat_in,
+		
+		spi_miso => spi_miso,
+		spi_mosi => spi_mosi,
+		spi_clk => spi_clk,
+		spi_cs => spi_cs,
+		
+		-- "Front panel" controls.
+		testpattern => testpattern,
+		scalered => scalered,
+		scalegreen => scalegreen,
+		scaleblue => scaleblue
 	);
-
-process(clk,vga_X,vga_Y)
-begin
-	if rising_edge(clk) then
-		if vga_Y<X"1E0" and vga_X<X"280" then
-			-- Instead of sending the test pattern directly to VGA_[R|G|B] we now write it
-			-- to internal signals which are merged with the OSD.
-			case testpattern is
-				when "00" =>
-					vga_red_i<=vga_X(7 downto 0);
-					vga_green_i<=vga_Y(7 downto 0);
-					vga_blue_i<=vga_X(3)&vga_Y(3)&vga_X(2)&vga_Y(2)&vga_X(1)&vga_Y(1)&vga_X(0)&vga_Y(0);
-				when "01" =>
-					vga_red_i<=not vga_X(7 downto 0);
-					vga_green_i<=vga_Y(7 downto 0);
-					vga_blue_i<=not (vga_X(3)&vga_Y(3)&vga_X(2)&vga_Y(2)&vga_X(1)&vga_Y(1)&vga_X(0)&vga_Y(0));
-				when "10" =>
-					vga_red_i<=vga_X(7 downto 0);
-					vga_green_i<=not vga_Y(7 downto 0);
-					vga_blue_i<=vga_X(3)&vga_Y(3)&vga_X(2)&vga_Y(2)&vga_X(1)&vga_Y(1)&vga_X(0)&vga_Y(0);
-				when "11" =>
-					vga_red_i<=not vga_X(7 downto 0);
-					vga_green_i<=not vga_Y(7 downto 0);
-					vga_blue_i<=not (vga_X(3)&vga_Y(3)&vga_X(2)&vga_Y(2)&vga_X(1)&vga_Y(1)&vga_X(0)&vga_Y(0));
-				when others =>
-					null;
-			end case;
-		else
-			vga_red_i<=X"00";
-			vga_green_i<=X"00";
-			vga_blue_i<=X"00";
-		end if;
-	end if;
-end process;
-
-
--- Scale according to the RGB scale values;
-vga_red_i_scaled<=scalered * vga_red_i;
-vga_green_i_scaled<=scalegreen * vga_green_i;
-vga_blue_i_scaled<=scaleblue * vga_blue_i;
-
 
 -- Merge the host's VGA output and the OSD output:
 
@@ -208,9 +161,9 @@ overlay : entity work.OSD_Overlay
 	port map
 	(
 		clk => CLK,
-		red_in => std_logic_vector(vga_red_i_scaled(11 downto 4)),
-		green_in => std_logic_vector(vga_green_i_scaled(11 downto 4)),
-		blue_in => std_logic_vector(vga_blue_i_scaled(11 downto 4)),
+		red_in => vga_red_i,
+		green_in => vga_green_i,
+		blue_in => vga_blue_i,
 		window_in => '1',
 		osd_window_in => osd_window,
 		osd_pixel_in => osd_pixel,
@@ -224,6 +177,5 @@ overlay : entity work.OSD_Overlay
 
 VGA_HS <= vga_hsync_i;
 VGA_VS <= vga_vsync_i;
-
 
 end rtl;

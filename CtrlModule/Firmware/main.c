@@ -38,7 +38,7 @@ static struct menu_entry topmenu[]; // Forward declaration.
 // RGB scaling submenu
 static struct menu_entry rgbmenu[]=
 {
-	{MENU_ENTRY_SLIDER,"Red",MENU_ACTION_SLIDER(16)},
+	{MENU_ENTRY_SLIDER,"Red",MENU_ACTION(16)},
 	{MENU_ENTRY_SLIDER,"Green",MENU_ACTION(16)},
 	{MENU_ENTRY_SLIDER,"Blue",MENU_ACTION(16)},
 	{MENU_ENTRY_SUBMENU,"Exit",MENU_ACTION(topmenu)},
@@ -58,9 +58,9 @@ static char *testpattern_labels[]=
 // Our toplevel menu
 static struct menu_entry topmenu[]=
 {
-	{MENU_ENTRY_CYCLE,(char *)testpattern_labels,MENU_ACTION_CYCLE(4)},
+	{MENU_ENTRY_CYCLE,(char *)testpattern_labels,MENU_ACTION(4)},
 	{MENU_ENTRY_SUBMENU,"RGB Scaling \x10",MENU_ACTION(rgbmenu)},
-	{MENU_ENTRY_TOGGLE,"Scanlines",MENU_ACTION_TOGGLE(0)},
+	{MENU_ENTRY_TOGGLE,"Scanlines",MENU_ACTION(0)},
 	{MENU_ENTRY_CALLBACK,"Animate",MENU_ACTION(&TriggerEffect)},
 	{MENU_ENTRY_CALLBACK,"Exit",MENU_ACTION(&Menu_Hide)},
 	{MENU_ENTRY_NULL,0,0}
