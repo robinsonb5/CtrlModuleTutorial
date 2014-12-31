@@ -4,8 +4,11 @@ use IEEE.STD_LOGIC_TEXTIO.all;
 use IEEE.NUMERIC_STD.ALL;
 
 entity HostCore is
+	generic (
+		sysclk_frequency : integer := 1000 -- Sysclk frequency * 10
+	);
 	port(
-		reset : in std_logic;
+		reset_n : in std_logic;
 		clk : in std_logic;
 		
 		vga_r		: out std_logic_vector(7 downto 0);
@@ -34,14 +37,16 @@ end entity;
 
 architecture rtl of HostCore is
 
+-- Internal video signals:
+
 signal eopixel : std_logic;
 signal eoline : std_logic;
 signal eoframe : std_logic;
 signal vga_X : unsigned(11 downto 0);
 signal vga_Y : unsigned(11 downto 0);
+signal vga_offset : unsigned(7 downto 0);
+signal vga_ysum : unsigned(11 downto 0);
 
-
--- Internal video signals:
 signal vga_red_i : unsigned(7 downto 0);
 signal vga_green_i : unsigned(7 downto 0);
 signal vga_blue_i	: unsigned(7 downto 0);		
@@ -49,13 +54,17 @@ signal vga_red_i_scaled : unsigned(12 downto 0);
 signal vga_green_i_scaled : unsigned(12 downto 0);
 signal vga_blue_i_scaled : unsigned(12 downto 0);
 
+
+-- Keyboard signals
+
+signal kbdrecv : std_logic;
+signal kbdrecvbyte : std_logic_vector(10 downto 0);
+
+
 begin
 
 
 -- Safe defaults for unused signals 
-
-ps2k_clk_out<='1';
-ps2k_dat_out<='1';
 
 spi_cs<='1';
 spi_clk<='0';
@@ -91,36 +100,69 @@ vgamaster : entity work.video_vga_master
 	);
 
 	
+-- PS2 keyboard
+mykeyboard : entity work.io_ps2_com
+generic map (
+	clockFilter => 15,
+	ticksPerUsec => sysclk_frequency/10
+)
+port map (
+	clk => clk,
+	reset => not reset_n, -- active high!
+	ps2_clk_in => ps2k_clk_in,
+	ps2_dat_in => ps2k_dat_in,
+	ps2_clk_out => ps2k_clk_out,
+	ps2_dat_out => ps2k_dat_out,
+	
+	inIdle => open,
+	sendTrigger => '0',
+	sendByte => (others=>'X'),
+	sendBusy => open,
+	sendDone => open,
+	recvTrigger => kbdrecv,
+	recvByte => kbdrecvbyte
+);
+
+	
 -- Render the test pattern
 
 process(clk,vga_X,vga_Y)
 begin
 	if rising_edge(clk) then
-		if vga_Y<X"1E0" and vga_X<X"280" then
-			case testpattern is
-				when "00" =>
-					vga_red_i<=vga_X(7 downto 0);
-					vga_green_i<=vga_Y(7 downto 0);
-					vga_blue_i<=vga_X(3)&vga_Y(3)&vga_X(2)&vga_Y(2)&vga_X(1)&vga_Y(1)&vga_X(0)&vga_Y(0);
-				when "01" =>
-					vga_red_i<=not vga_X(7 downto 0);
-					vga_green_i<=vga_Y(7 downto 0);
-					vga_blue_i<=not (vga_X(3)&vga_Y(3)&vga_X(2)&vga_Y(2)&vga_X(1)&vga_Y(1)&vga_X(0)&vga_Y(0));
-				when "10" =>
-					vga_red_i<=vga_X(7 downto 0);
-					vga_green_i<=not vga_Y(7 downto 0);
-					vga_blue_i<=vga_X(3)&vga_Y(3)&vga_X(2)&vga_Y(2)&vga_X(1)&vga_Y(1)&vga_X(0)&vga_Y(0);
-				when "11" =>
-					vga_red_i<=not vga_X(7 downto 0);
-					vga_green_i<=not vga_Y(7 downto 0);
-					vga_blue_i<=not (vga_X(3)&vga_Y(3)&vga_X(2)&vga_Y(2)&vga_X(1)&vga_Y(1)&vga_X(0)&vga_Y(0));
-				when others =>
-					null;
-			end case;
+		if reset_n='0' then
+			vga_offset<=X"00";
 		else
-			vga_red_i<=X"00";
-			vga_green_i<=X"00";
-			vga_blue_i<=X"00";
+			if kbdrecv='1' then
+				vga_offset <= unsigned(kbdrecvbyte(4 downto 1)&kbdrecvbyte(8 downto 5));
+			end if;
+			vga_ysum <= vga_Y+vga_offset;
+		
+			if vga_Y<X"1E0" and vga_X<X"280" then
+				case testpattern is
+					when "00" =>
+						vga_red_i<=vga_X(7 downto 0);
+						vga_green_i<=vga_ysum(7 downto 0);
+						vga_blue_i<=vga_X(3)&vga_ysum(3)&vga_X(2)&vga_ysum(2)&vga_X(1)&vga_ysum(1)&vga_X(0)&vga_ysum(0);
+					when "01" =>
+						vga_red_i<=not vga_X(7 downto 0);
+						vga_green_i<=vga_ysum(7 downto 0);
+						vga_blue_i<=not (vga_X(3)&vga_ysum(3)&vga_X(2)&vga_ysum(2)&vga_X(1)&vga_ysum(1)&vga_X(0)&vga_ysum(0));
+					when "10" =>
+						vga_red_i<=vga_X(7 downto 0);
+						vga_green_i<=not vga_ysum(7 downto 0);
+						vga_blue_i<=vga_X(3)&vga_ysum(3)&vga_X(2)&vga_ysum(2)&vga_X(1)&vga_ysum(1)&vga_X(0)&vga_ysum(0);
+					when "11" =>
+						vga_red_i<=not vga_X(7 downto 0);
+						vga_green_i<=not vga_ysum(7 downto 0);
+						vga_blue_i<=not (vga_X(3)&vga_ysum(3)&vga_X(2)&vga_ysum(2)&vga_X(1)&vga_ysum(1)&vga_X(0)&vga_ysum(0));
+					when others =>
+						null;
+				end case;
+			else
+				vga_red_i<=X"00";
+				vga_green_i<=X"00";
+				vga_blue_i<=X"00";
+			end if;
 		end if;
 	end if;
 end process;

@@ -65,17 +65,39 @@ signal spi_divert : std_logic;
 signal vga_red_i : std_logic_vector(7 downto 0);
 signal vga_green_i : std_logic_vector(7 downto 0);
 signal vga_blue_i	: std_logic_vector(7 downto 0);		
-signal scalered : unsigned(4 downto 0);
-signal scalegreen : unsigned(4 downto 0);
-signal scaleblue : unsigned(4 downto 0);
 signal vga_vsync_i : std_logic;
 signal vga_hsync_i : std_logic;
 
 signal osd_window : std_logic;
 signal osd_pixel : std_logic;
 
+-- "Front panel" signals, from the Control module
+signal scalered : unsigned(4 downto 0);
+signal scalegreen : unsigned(4 downto 0);
+signal scaleblue : unsigned(4 downto 0);
 signal testpattern : std_logic_vector(1 downto 0);
 signal scanlines : std_logic;
+
+-- Host control signals, from the Control module
+signal host_reset_n : std_logic;
+signal host_divert_keyboard : std_logic;
+signal host_divert_sdcard : std_logic;
+
+-- Internal keyboard and sdcard signals
+signal host_ps2k_clk_in : std_logic;
+signal host_ps2k_clk_out : std_logic;
+signal host_ps2k_dat_in : std_logic;
+signal host_ps2k_dat_out : std_logic;
+
+signal host_spi_miso : std_logic;
+signal host_spi_mosi : std_logic;
+signal host_spi_clk : std_logic;
+signal host_spi_cs : std_logic;
+
+signal ctrl_spi_miso : std_logic;
+signal ctrl_spi_mosi : std_logic;
+signal ctrl_spi_clk : std_logic;
+signal ctrl_spi_cs : std_logic;
 
 begin
 
@@ -84,6 +106,19 @@ RS232_TXD<='1';
 DRAM_CS_N <='1';
 DRAM_RAS_N <='1';
 DRAM_CAS_N <='1';
+
+
+-- Multiplex SD card signals between the host and control module
+spi_clk <= ctrl_spi_clk when host_divert_sdcard='1' else host_spi_clk;
+spi_mosi <= ctrl_spi_mosi when host_divert_sdcard='1' else host_spi_mosi;
+spi_cs <= ctrl_spi_cs when host_divert_sdcard='1' else host_spi_cs;
+host_spi_miso <= '1' when host_divert_sdcard='1' else spi_miso;
+
+-- Block keyboard signals from reaching the host when host_divert_keyboard is high.
+host_ps2k_dat_in <= ps2k_dat_in or host_divert_keyboard;
+host_ps2k_clk_in <= ps2k_clk_in or host_divert_keyboard;
+ps2k_dat_out<=host_ps2k_dat_out or host_divert_keyboard; 
+ps2k_clk_out<=host_ps2k_clk_out or host_divert_keyboard; 
 
 
 -- Control module
@@ -121,7 +156,12 @@ MyCtrlModule : entity work.CtrlModule
 		-- RGB scaling
 		scalered => scalered,
 		scalegreen => scalegreen,
-		scaleblue => scaleblue
+		scaleblue => scaleblue,
+		
+		-- Control signals
+		host_divert_sdcard => host_divert_sdcard,
+		host_divert_keyboard => host_divert_keyboard,
+		host_reset_n => host_reset_n
 	);
 
 
@@ -129,7 +169,7 @@ MyCtrlModule : entity work.CtrlModule
 
 myhostcore : entity work.HostCore
 	port map(
-		reset => reset,
+		reset_n => host_reset_n,
 		clk => clk,
 		
 		vga_r	=> vga_red_i,
@@ -138,15 +178,15 @@ myhostcore : entity work.HostCore
 		vga_hs => vga_hsync_i,
 		vga_vs => vga_vsync_i,
 
-		ps2k_clk_out => ps2k_clk_out,
-		ps2k_dat_out => ps2k_dat_out,
-		ps2k_clk_in => ps2k_clk_in,
-		ps2k_dat_in => ps2k_dat_in,
+		ps2k_clk_out => host_ps2k_clk_out,
+		ps2k_dat_out => host_ps2k_dat_out,
+		ps2k_clk_in => host_ps2k_clk_in,
+		ps2k_dat_in => host_ps2k_dat_in,
 		
-		spi_miso => spi_miso,
-		spi_mosi => spi_mosi,
-		spi_clk => spi_clk,
-		spi_cs => spi_cs,
+		spi_miso => host_spi_miso,
+		spi_mosi => host_spi_mosi,
+		spi_clk => host_spi_clk,
+		spi_cs => host_spi_cs,
 		
 		-- "Front panel" controls.
 		testpattern => testpattern,

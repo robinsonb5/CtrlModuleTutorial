@@ -29,7 +29,12 @@ entity CtrlModule is
 		-- RGB scaling
 		scalered : out unsigned(4 downto 0);
 		scalegreen : out unsigned(4 downto 0);
-		scaleblue : out unsigned(4 downto 0)
+		scaleblue : out unsigned(4 downto 0);
+
+		-- Host control signals
+		host_divert_sdcard : out std_logic;
+		host_divert_keyboard : out std_logic;
+		host_reset_n : out std_logic
 	);
 end entity;
 
@@ -201,6 +206,7 @@ begin
 	if reset_n='0' then
 		int_enabled<='0';
 		kbdrecvreg <='0';
+		host_reset_n <='0';
 	elsif rising_edge(clk) then
 		mem_busy<='1';
 		osd_charwr<='0';
@@ -226,6 +232,12 @@ begin
 						when X"B0" => -- Interrupts
 							int_enabled<=mem_write(0);
 							mem_busy<='0';
+
+						when X"EC" => -- Host control
+							mem_busy<='0';
+							host_reset_n<=not mem_write(0);
+							host_divert_keyboard<=mem_write(1);
+							host_divert_sdcard<=mem_write(2);
 
 						when X"F0" => -- Scale Red
 							mem_busy<='0';

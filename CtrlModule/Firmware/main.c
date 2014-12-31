@@ -32,6 +32,12 @@ void TriggerEffect(int row)
 }
 
 
+void Reset(int row)
+{
+	HW_HOST(REG_HOST_CONTROL)=HOST_CONTROL_RESET|HOST_CONTROL_DIVERT_KEYBOARD; // Reset host core
+	HW_HOST(REG_HOST_CONTROL)=HOST_CONTROL_DIVERT_KEYBOARD;
+}
+
 
 static struct menu_entry topmenu[]; // Forward declaration.
 
@@ -58,6 +64,7 @@ static char *testpattern_labels[]=
 // Our toplevel menu
 static struct menu_entry topmenu[]=
 {
+	{MENU_ENTRY_CALLBACK,"Reset",MENU_ACTION(&Reset)},
 	{MENU_ENTRY_CYCLE,(char *)testpattern_labels,MENU_ACTION(4)},
 	{MENU_ENTRY_SUBMENU,"RGB Scaling \x10",MENU_ACTION(rgbmenu)},
 	{MENU_ENTRY_TOGGLE,"Scanlines",MENU_ACTION(0)},
@@ -71,6 +78,10 @@ int main(int argc,char **argv)
 {
 	int i;
 	int dipsw=0;
+
+	// Put the host core in reset while we initialise...
+	HW_HOST(REG_HOST_CONTROL)=HOST_CONTROL_RESET;
+
 	PS2Init();
 	EnableInterrupts();
 	OSD_Clear();
@@ -84,19 +95,27 @@ int main(int argc,char **argv)
 	MENU_SLIDER_VALUE(&rgbmenu[1])=8;
 	MENU_SLIDER_VALUE(&rgbmenu[2])=8;
 	Menu_Show();
+
+	// Release host core from reset.
+	HW_HOST(REG_HOST_CONTROL)=0;
+
 	while(1)
 	{
 		struct menu_entry *m;
+		int visible;
 		HandlePS2RawCodes();
-		Menu_Run();
+		visible=Menu_Run();
 
-		dipsw=MENU_CYCLE_VALUE(&topmenu[0]);	// Take the value of the TestPattern cycle menu entry.
+		dipsw=MENU_CYCLE_VALUE(&topmenu[1]);	// Take the value of the TestPattern cycle menu entry.
 		if(MENU_TOGGLE_VALUES&1)
 			dipsw|=4;	// Add in the scanlines bit.
 		HW_HOST(REG_HOST_SW)=dipsw;	// Send the new values to the hardware.
 		HW_HOST(REG_HOST_SCALERED)=MENU_SLIDER_VALUE(&rgbmenu[0]);
 		HW_HOST(REG_HOST_SCALEGREEN)=MENU_SLIDER_VALUE(&rgbmenu[1]);
 		HW_HOST(REG_HOST_SCALEBLUE)=MENU_SLIDER_VALUE(&rgbmenu[2]);
+
+		// If the menu's visible, prevent keystrokes reaching the host core.
+		HW_HOST(REG_HOST_CONTROL)=(visible ? HOST_CONTROL_DIVERT_KEYBOARD : 0);
 	}
 	return(0);
 }
