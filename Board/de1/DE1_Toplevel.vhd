@@ -192,6 +192,12 @@ reset<=KEY(0) and pll_locked;
 
 
 virtualtoplevel : entity work.Virtual_Toplevel
+	generic map
+	(
+		sdram_rows => 12,
+		sdram_cols => 8,
+		sysclk_frequency => 1000
+	)
 	port map(
 		reset => KEY(0),
 		CLK => sysclk,

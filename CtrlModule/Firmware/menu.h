@@ -49,6 +49,7 @@ void Menu_Draw();
 void Menu_Set(struct menu_entry *head);
 void Menu_SetHotKeys(struct hotkey *head);
 int Menu_Run(); // Returns the menu's visibility
+struct menu_entry *Menu_Get();
 
 extern int menu_toggle_bits;
 #define MENU_TOGGLE_VALUES menu_toggle_bits

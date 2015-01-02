@@ -6,6 +6,9 @@
 
 /* SPI registers */
 
+/* Host Boot Data register */
+#define REG_HOST_BOOTDATA 0x08
+
 /* Host control register */
 #define REG_HOST_CONTROL 0x0C
 #define HOST_CONTROL_RESET 1

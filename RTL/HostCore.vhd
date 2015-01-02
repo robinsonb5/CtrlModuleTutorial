@@ -3,14 +3,32 @@ use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.STD_LOGIC_TEXTIO.all;
 use IEEE.NUMERIC_STD.ALL;
 
+library work;
+use work.DMACache_pkg.ALL;
+use work.DMACache_config.ALL;
+
 entity HostCore is
 	generic (
+		sdram_rows : integer := 12;
+		sdram_cols : integer := 8;
 		sysclk_frequency : integer := 1000 -- Sysclk frequency * 10
 	);
 	port(
 		reset_n : in std_logic;
 		clk : in std_logic;
 		
+		-- SDRAM
+		sdr_data		: inout std_logic_vector(15 downto 0);
+		sdr_addr		: out std_logic_vector((sdram_rows-1) downto 0);
+		sdr_dqm 		: out std_logic_vector(1 downto 0);
+		sdr_we 		: out std_logic;
+		sdr_cas 		: out std_logic;
+		sdr_ras 		: out std_logic;
+		sdr_cs		: out std_logic;
+		sdr_ba		: out std_logic_vector(1 downto 0);
+--		sdr_clk		: out std_logic;
+		sdr_cke		: out std_logic;
+
 		vga_r		: out std_logic_vector(7 downto 0);
 		vga_g		: out std_logic_vector(7 downto 0);
 		vga_b		: out std_logic_vector(7 downto 0);
@@ -31,7 +49,12 @@ entity HostCore is
 		testpattern : in std_logic_vector(1 downto 0);
 		scalered : in unsigned(4 downto 0);
 		scalegreen : in unsigned(4 downto 0);
-		scaleblue : in unsigned(4 downto 0)
+		scaleblue : in unsigned(4 downto 0);
+		
+		-- Boot data uploading interface
+		bootdata : in std_logic_vector(31 downto 0):=(others => 'X');
+		bootdata_req : in std_logic:='0';
+		bootdata_ack : out std_logic
 	);
 end entity;
 
@@ -61,8 +84,64 @@ signal kbdrecv : std_logic;
 signal kbdrecvbyte : std_logic_vector(10 downto 0);
 
 
+-- Plumbing between DMA controller and SDRAM
+
+signal vga_addr : std_logic_vector(31 downto 0);
+signal vga_data : std_logic_vector(15 downto 0);
+signal vga_req : std_logic;
+signal vga_fill : std_logic;
+signal vga_refresh : std_logic;
+signal vga_newframe : std_logic;
+signal vga_reservebank : std_logic; -- Keep bank clear for instant access.
+signal vga_reserveaddr : std_logic_vector(31 downto 0); -- to SDRAM
+
+signal dma_data : std_logic_vector(15 downto 0);
+
+
+-- Plumbing between VGA controller and DMA controller
+
+signal vgachannel_fromhost : DMAChannel_FromHost;
+signal vgachannel_tohost : DMAChannel_ToHost;
+signal spr0channel_fromhost : DMAChannel_FromHost;
+signal spr0channel_tohost : DMAChannel_ToHost;
+
+
+-- VGA register block signals
+
+signal vga_reg_addr : std_logic_vector(11 downto 0);
+signal vga_reg_dataout : std_logic_vector(31 downto 0);
+signal vga_reg_datain : std_logic_vector(31 downto 0);
+signal vga_reg_rw : std_logic;
+signal vga_reg_req : std_logic;
+signal vga_reg_dtack : std_logic;
+signal vga_ack : std_logic;
+signal vblank_int : std_logic;
+
+
+-- SDRAM signals
+
+signal sdr_ready : std_logic;
+signal sdram_write : std_logic_vector(31 downto 0); -- 32-bit width for ZPU
+signal sdram_addr : std_logic_vector(31 downto 0);
+signal sdram_req : std_logic;
+signal sdram_wr : std_logic;
+signal sdram_read : std_logic_vector(31 downto 0);
+signal sdram_ack : std_logic;
+
+signal sdram_wrL : std_logic;
+signal sdram_wrU : std_logic;
+signal sdram_wrU2 : std_logic;
+
+
+-- General signals
+type boot_states is (idle, ramwait);
+signal boot_state : boot_states := idle;
+
 begin
 
+-- Enable SDRAM
+
+sdr_cke<='1';
 
 -- Safe defaults for unused signals 
 
@@ -71,32 +150,143 @@ spi_clk<='0';
 spi_mosi<='1';
 
 
--- Video timings generator
+-- State machine to receive and stash boot data in SDRAM
+process(clk, bootdata_req)
+begin
+	if rising_edge(clk) then
+		if reset_n='0' then
+			sdram_addr<=X"00100000"; -- The VGA controller's default framebuffer address
+			sdram_req<='0';
+			sdram_wr<='1';
+			bootdata_ack<='0';
+			boot_state<=idle;
+		else
+			bootdata_ack<='0';
+			case boot_state is
+				when idle =>
+					if bootdata_req='1' then
+						sdram_write<=bootdata;
+						sdram_wr<='0';
+						sdram_req<='1';
+						boot_state<=ramwait;
+						bootdata_ack<='1';
+					end if;
+				when ramwait =>
+					if sdram_ack='1' then
+						sdram_addr<=std_logic_vector((unsigned(sdram_addr)+4));
+						sdram_req<='0';
+						sdram_wr<='1';
+						boot_state<=idle;
+					end if;
+			end case;
+		end if;
+	end if;
+end process;
 
-vgamaster : entity work.video_vga_master
-	port map (
--- System
+
+-- DMA controller
+
+	mydmacache : entity work.DMACache
+		port map(
+			clk => clk,
+			reset_n => reset_n,
+
+			channels_from_host(0) => vgachannel_fromhost,
+			channels_from_host(1) => spr0channel_fromhost,
+			channels_to_host(0) => vgachannel_tohost,	
+			channels_to_host(1) => spr0channel_tohost,
+
+			data_out => dma_data,
+
+			-- SDRAM interface
+			sdram_addr=> vga_addr,
+			sdram_reserveaddr(31 downto 0) => vga_reserveaddr,
+			sdram_reserve => vga_reservebank,
+			sdram_req => vga_req,
+			sdram_ack => vga_ack,
+			sdram_fill => vga_fill,
+			sdram_data => vga_data
+		);	
+
+	
+-- SDRAM
+mysdram : entity work.sdram_simple
+	generic map
+	(
+		rows => sdram_rows,
+		cols => sdram_cols
+	)
+	port map
+	(
+	-- Physical connections to the SDRAM
+		sdata => sdr_data,
+		sdaddr => sdr_addr,
+		sd_we	=> sdr_we,
+		sd_ras => sdr_ras,
+		sd_cas => sdr_cas,
+		sd_cs	=> sdr_cs,
+		dqm => sdr_dqm,
+		ba	=> sdr_ba,
+
+	-- Housekeeping
+		sysclk => clk,
+		reset => reset_n,  -- Contributes to reset, so have to use reset_in here.
+		reset_out => sdr_ready,
+
+		vga_addr => vga_addr,
+		vga_data => vga_data,
+		vga_fill => vga_fill,
+		vga_req => vga_req,
+		vga_ack => vga_ack,
+		vga_refresh => vga_refresh,
+		vga_reservebank => vga_reservebank,
+		vga_reserveaddr => vga_reserveaddr,
+
+		vga_newframe => vga_newframe,
+		datawr1 => sdram_write,
+		addr1 => sdram_addr,
+		req1 => sdram_req,
+		wr1 => sdram_wr, -- active low
+		wrL1 => sdram_wr, -- lower byte
+		wrU1 => sdram_wr, -- upper byte
+		wrU2 => sdram_wr, -- upper halfword, only written on longword accesses
+		dataout1 => sdram_read,
+		dtack1 => sdram_ack
+	);
+
+	
+-- VGA controller
+-- Video
+	
+	myvga : entity work.vga_controller
+		generic map (
+			enable_sprite => false
+		)
+		port map (
 		clk => clk,
-		clkDiv => X"3", -- 100Mhz / (3+1) = 25 MHz dot clock
+		reset => reset_n,
 
--- Sync outputs
-		hSync => vga_hs, -- Now internal signals
-		vSync => vga_vs,
+		reg_addr_in => vga_reg_addr(7 downto 0),
+		reg_data_in => vga_reg_datain,
+--		reg_data_out => vga_reg_dataout,
+		reg_rw => vga_reg_rw,
+		reg_req => vga_reg_req,
 
--- Control outputs
-		endOfPixel => eopixel,
-		endOfLine => eoline,
-		endOfFrame => eoframe,
-		currentX => vga_X,
-		currentY => vga_Y,
+		sdr_refresh => vga_refresh,
 
--- Configuration
-		xSize => X"320",
-		ySize => X"20D",
-		xSyncFr => X"290",
-		xSyncTo => X"2F0",
-		ySyncFr => X"1F4",
-		ySyncTo => X"1F6"
+		dma_data => dma_data,
+		vgachannel_fromhost => vgachannel_fromhost,
+		vgachannel_tohost => vgachannel_tohost,
+		spr0channel_fromhost => spr0channel_fromhost,
+		spr0channel_tohost => spr0channel_tohost,
+
+		hsync => vga_hs,
+		vsync => vga_vs,
+		vblank_int => vblank_int,
+		red => vga_red_i,
+		green => vga_green_i,
+		blue => vga_blue_i
+--		vga_window => vga_window
 	);
 
 	
@@ -123,57 +313,32 @@ port map (
 	recvByte => kbdrecvbyte
 );
 
-	
--- Render the test pattern
-
-process(clk,vga_X,vga_Y)
-begin
-	if rising_edge(clk) then
-		if reset_n='0' then
-			vga_offset<=X"00";
-		else
-			if kbdrecv='1' then
-				vga_offset <= unsigned(kbdrecvbyte(4 downto 1)&kbdrecvbyte(8 downto 5));
-			end if;
-			vga_ysum <= vga_Y+vga_offset;
-		
-			if vga_Y<X"1E0" and vga_X<X"280" then
-				case testpattern is
-					when "00" =>
-						vga_red_i<=vga_X(7 downto 0);
-						vga_green_i<=vga_ysum(7 downto 0);
-						vga_blue_i<=vga_X(3)&vga_ysum(3)&vga_X(2)&vga_ysum(2)&vga_X(1)&vga_ysum(1)&vga_X(0)&vga_ysum(0);
-					when "01" =>
-						vga_red_i<=not vga_X(7 downto 0);
-						vga_green_i<=vga_ysum(7 downto 0);
-						vga_blue_i<=not (vga_X(3)&vga_ysum(3)&vga_X(2)&vga_ysum(2)&vga_X(1)&vga_ysum(1)&vga_X(0)&vga_ysum(0));
-					when "10" =>
-						vga_red_i<=vga_X(7 downto 0);
-						vga_green_i<=not vga_ysum(7 downto 0);
-						vga_blue_i<=vga_X(3)&vga_ysum(3)&vga_X(2)&vga_ysum(2)&vga_X(1)&vga_ysum(1)&vga_X(0)&vga_ysum(0);
-					when "11" =>
-						vga_red_i<=not vga_X(7 downto 0);
-						vga_green_i<=not vga_ysum(7 downto 0);
-						vga_blue_i<=not (vga_X(3)&vga_ysum(3)&vga_X(2)&vga_ysum(2)&vga_X(1)&vga_ysum(1)&vga_X(0)&vga_ysum(0));
-					when others =>
-						null;
-				end case;
-			else
-				vga_red_i<=X"00";
-				vga_green_i<=X"00";
-				vga_blue_i<=X"00";
-			end if;
-		end if;
-	end if;
-end process;
+vga_reg_req<='0';
+vga_reg_rw<='1';
 
 -- Scale according to the RGB scale values;
 vga_red_i_scaled<=scalered * vga_red_i;
 vga_green_i_scaled<=scalegreen * vga_green_i;
 vga_blue_i_scaled<=scaleblue * vga_blue_i;
 
-vga_r<=std_logic_vector(vga_red_i_scaled(11 downto 4));
-vga_g<=std_logic_vector(vga_green_i_scaled(11 downto 4));
-vga_b<=std_logic_vector(vga_blue_i_scaled(11 downto 4));
+-- Swap channels based on testpattern signal
+
+with testpattern select vga_r <=
+	std_logic_vector(vga_red_i_scaled(11 downto 4)) when "00",
+	std_logic_vector(vga_green_i_scaled(11 downto 4)) when "01",
+	std_logic_vector(vga_blue_i_scaled(11 downto 4)) when "10",
+	std_logic_vector(vga_red_i_scaled(11 downto 4)) when "11";
+	
+with testpattern select vga_g <=
+	std_logic_vector(vga_green_i_scaled(11 downto 4)) when "00",
+	std_logic_vector(vga_blue_i_scaled(11 downto 4)) when "01",
+	std_logic_vector(vga_red_i_scaled(11 downto 4)) when "10",
+	std_logic_vector(vga_blue_i_scaled(11 downto 4)) when "11";
+
+with testpattern select vga_b <=
+	std_logic_vector(vga_blue_i_scaled(11 downto 4)) when "00",
+	std_logic_vector(vga_red_i_scaled(11 downto 4)) when "01",
+	std_logic_vector(vga_green_i_scaled(11 downto 4)) when "10",
+	std_logic_vector(vga_green_i_scaled(11 downto 4)) when "11";
 
 end rtl;

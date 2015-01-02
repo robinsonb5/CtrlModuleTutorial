@@ -22,7 +22,13 @@ entity CtrlModule is
 		-- PS/2 keyboard
 		ps2k_clk_in : in std_logic := '1';
 		ps2k_dat_in : in std_logic := '1';
-		
+
+		-- SD card interface
+		spi_miso		: in std_logic := '1';
+		spi_mosi		: out std_logic;
+		spi_clk		: out std_logic;
+		spi_cs 		: out std_logic;
+
 		-- DIP switches
 		dipswitches : out std_logic_vector(15 downto 0);
 		
@@ -34,7 +40,12 @@ entity CtrlModule is
 		-- Host control signals
 		host_divert_sdcard : out std_logic;
 		host_divert_keyboard : out std_logic;
-		host_reset_n : out std_logic
+		host_reset_n : out std_logic;
+		
+		-- Boot upload signals
+		host_bootdata : out std_logic_vector(31 downto 0);
+		host_bootdata_req : out std_logic;
+		host_bootdata_ack : in std_logic :='0'
 	);
 end entity;
 
@@ -81,6 +92,20 @@ signal int_status : std_logic_vector(int_max downto 0);
 signal int_ack : std_logic;
 signal int_req : std_logic;
 signal int_enabled : std_logic :='0'; -- Disabled by default
+
+
+-- SPI Clock counter
+signal spi_tick : unsigned(8 downto 0);
+signal spiclk_in : std_logic;
+signal spi_fast : std_logic;
+
+-- SPI signals
+signal host_to_spi : std_logic_vector(7 downto 0);
+signal spi_to_host : std_logic_vector(7 downto 0);
+signal spi_trigger : std_logic;
+signal spi_busy : std_logic;
+signal spi_active : std_logic;
+
 
 
 begin
@@ -180,6 +205,41 @@ port map (
 	recvByte => kbdrecvbyte
 );
 
+
+-- SPI Timer
+process(clk)
+begin
+	if rising_edge(clk) then
+		spiclk_in<='0';
+		spi_tick<=spi_tick+1;
+		if (spi_fast='1' and spi_tick(4)='1') or spi_tick(8)='1' then
+			spiclk_in<='1'; -- Momentary pulse for SPI host.
+			spi_tick<='0'&X"00";
+		end if;
+	end if;
+end process;
+
+
+-- SD Card host
+
+spi : entity work.spi_interface
+	port map(
+		sysclk => clk,
+		reset => reset_n,
+
+		-- Host interface
+		spiclk_in => spiclk_in,
+		host_to_spi => host_to_spi,
+		spi_to_host => spi_to_host,
+		trigger => spi_trigger,
+		busy => spi_busy,
+
+		-- Hardware interface
+		miso => spi_miso,
+		mosi => spi_mosi,
+		spiclk_out => spi_clk
+	);
+
 		
 -- Interrupt controller
 
@@ -207,12 +267,16 @@ begin
 		int_enabled<='0';
 		kbdrecvreg <='0';
 		host_reset_n <='0';
+		host_bootdata_req<='0';
+		spi_active<='0';
+		spi_cs<='1';
 	elsif rising_edge(clk) then
 		mem_busy<='1';
 		osd_charwr<='0';
 		osd_wr<='0';
 		int_ack<='0';
-		
+		spi_trigger<='0';
+
 		-- Write from CPU?
 		if mem_writeEnable='1' then
 			case mem_addr(maxAddrBit)&mem_addr(10 downto 8) is
@@ -232,6 +296,21 @@ begin
 						when X"B0" => -- Interrupts
 							int_enabled<=mem_write(0);
 							mem_busy<='0';
+
+						when X"D0" => -- SPI CS
+							spi_cs<=not mem_write(0);
+							spi_fast<=mem_write(8);
+							mem_busy<='0';
+
+						when X"D4" => -- SPI Data (blocking)
+							spi_trigger<='1';
+							host_to_spi<=mem_write(7 downto 0);
+							spi_active<='1';
+
+						when X"E8" => -- Host boot data
+							-- Note that we don't clear mem_busy here; it's set instead when the ack signal comes in.
+							host_bootdata<=mem_write;
+							host_bootdata_req<='1';
 
 						when X"EC" => -- Host control
 							mem_busy<='0';
@@ -286,6 +365,14 @@ begin
 							mem_read(int_max downto 0)<=int_status;
 							int_ack<='1';
 							mem_busy<='0';
+
+						when X"D0" => -- SPI Status
+							mem_read<=(others=>'X');
+							mem_read(15)<=spi_busy;
+							mem_busy<='0';
+
+						when X"D4" => -- SPI read (blocking)
+							spi_active<='1';
 							
 						when X"E0" =>	-- Read from PS/2 regs
 
@@ -302,6 +389,22 @@ begin
 					mem_busy<='0';
 			end case;
 		end if;
+
+		-- Boot data termination - allow CPU to proceed once boot data is acknowleged:
+		if host_bootdata_ack='1' then
+			mem_busy<='0';
+			host_bootdata_req<='0';
+		end if;
+
+		
+		-- SPI cycle termination
+		if spi_active='1' and spi_busy='0' then
+			mem_read(7 downto 0)<=spi_to_host;
+			mem_read(31 downto 8)<=(others => '0');
+			spi_active<='0';
+			mem_busy<='0';
+		end if;
+		
 
 		if kbdrecv='1' then
 			kbdrecvreg <= '1'; -- remains high until cleared by a read

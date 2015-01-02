@@ -4,6 +4,11 @@
 #include "keyboard.h"
 #include "menu.h"
 #include "ps2.h"
+#include "minfat.h"
+#include "spi.h"
+#include "fileselector.h"
+
+fileTYPE file;
 
 
 int OSD_Puts(char *str)
@@ -69,9 +74,75 @@ static struct menu_entry topmenu[]=
 	{MENU_ENTRY_SUBMENU,"RGB Scaling \x10",MENU_ACTION(rgbmenu)},
 	{MENU_ENTRY_TOGGLE,"Scanlines",MENU_ACTION(0)},
 	{MENU_ENTRY_CALLBACK,"Animate",MENU_ACTION(&TriggerEffect)},
+	{MENU_ENTRY_CALLBACK,"Load image \x10",MENU_ACTION(&FileSelector_Show)},
 	{MENU_ENTRY_CALLBACK,"Exit",MENU_ACTION(&Menu_Hide)},
 	{MENU_ENTRY_NULL,0,0}
 };
+
+
+// An error message
+static struct menu_entry loadfailed[]=
+{
+	{MENU_ENTRY_SUBMENU,"Initial ROM loading failed",MENU_ACTION(loadfailed)},
+	{MENU_ENTRY_SUBMENU,"OK",MENU_ACTION(&topmenu)},
+	{MENU_ENTRY_NULL,0,0}
+};
+
+
+static int LoadROM(const char *filename)
+{
+	int result=0;
+	int opened;
+
+	HW_HOST(REG_HOST_CONTROL)=HOST_CONTROL_RESET;
+	HW_HOST(REG_HOST_CONTROL)=HOST_CONTROL_DIVERT_SDCARD; // Release reset but take control of the SD card
+
+	if((opened=FileOpen(&file,filename)))
+	{
+		int filesize=file.size;
+		unsigned int c=0;
+		int bits;
+
+		bits=0;
+		c=filesize-1;
+		while(c)
+		{
+			++bits;
+			c>>=1;
+		}
+		bits-=9;
+
+		result=1;
+
+		while(filesize>0)
+		{
+			OSD_ProgressBar(c,bits);
+			if(FileRead(&file,sector_buffer))
+			{
+				int i;
+				int *p=(int *)&sector_buffer;
+				for(i=0;i<512;i+=4)
+				{
+					unsigned int t=*p++;
+					HW_HOST(REG_HOST_BOOTDATA)=t;
+				}
+			}
+			else
+			{
+				result=0;
+				filesize=512;
+			}
+			FileNextSector(&file);
+			filesize-=512;
+			++c;
+		}
+	}
+	if(result)
+		Menu_Set(topmenu);
+	else
+		Menu_Set(loadfailed);
+	return(result);
+}
 
 
 int main(int argc,char **argv)
@@ -84,8 +155,8 @@ int main(int argc,char **argv)
 
 	PS2Init();
 	EnableInterrupts();
+
 	OSD_Clear();
-	Menu_Set(topmenu);
 	for(i=0;i<4;++i)
 	{
 		PS2Wait();	// Wait for an interrupt - most likely VBlank, but could be PS/2 keyboard
@@ -94,10 +165,28 @@ int main(int argc,char **argv)
 	MENU_SLIDER_VALUE(&rgbmenu[0])=8;
 	MENU_SLIDER_VALUE(&rgbmenu[1])=8;
 	MENU_SLIDER_VALUE(&rgbmenu[2])=8;
-	Menu_Show();
 
-	// Release host core from reset.
-	HW_HOST(REG_HOST_CONTROL)=0;
+	HW_HOST(REG_HOST_CONTROL)=HOST_CONTROL_DIVERT_SDCARD; // Release reset but take control of the SD card
+	OSD_Puts("Initializing SD card\n");
+	i=5;
+	while(--i>0)
+	{
+		spi_init();
+		if(FindDrive())
+			i=-1;
+	}
+	if(!i)	// Did we escape the loop?
+	{
+		OSD_Puts("Card init failed\n");
+		return(0);
+	}
+
+	OSD_Puts("Loading initial ROM...\n");
+
+	LoadROM("PIC1    RAW");
+
+	FileSelector_SetLoadFunction(LoadROM);
+	Menu_Show();
 
 	while(1)
 	{
@@ -115,7 +204,11 @@ int main(int argc,char **argv)
 		HW_HOST(REG_HOST_SCALEBLUE)=MENU_SLIDER_VALUE(&rgbmenu[2]);
 
 		// If the menu's visible, prevent keystrokes reaching the host core.
-		HW_HOST(REG_HOST_CONTROL)=(visible ? HOST_CONTROL_DIVERT_KEYBOARD : 0);
+		HW_HOST(REG_HOST_CONTROL)=(visible ?
+									HOST_CONTROL_DIVERT_KEYBOARD|HOST_CONTROL_DIVERT_SDCARD :
+									HOST_CONTROL_DIVERT_SDCARD); // Maintain control of the SD card so the file selector can work.
+																 // If the host needs SD card access then we would release the SD
+																 // card here, and not attempt to load any further files.
 	}
 	return(0);
 }

@@ -13,6 +13,11 @@ static int menurows;
 static int currentrow;
 static struct hotkey *hotkeys;
 
+struct menu_entry *Menu_Get()
+{
+	return(menu);
+}
+
 void Menu_Show()
 {
 	OSD_Show(menu_visible=1);

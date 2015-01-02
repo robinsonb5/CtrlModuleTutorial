@@ -7,14 +7,15 @@ use IEEE.NUMERIC_STD.ALL;
 entity Virtual_Toplevel is
 	generic
 	(
-		colAddrBits : integer := 8;
-		rowAddrBits : integer := 12
+		sdram_rows : integer := 12;
+		sdram_cols : integer := 8;
+		sysclk_frequency : integer := 1000
 	);
 	port(
 		reset : in std_logic;
 		CLK : in std_logic;
 		
-		DRAM_ADDR	: out std_logic_vector(rowAddrBits-1 downto 0);
+		DRAM_ADDR	: out std_logic_vector(sdram_rows-1 downto 0);
 		DRAM_BA_0	: out std_logic;
 		DRAM_BA_1	: out std_logic;
 		DRAM_CAS_N	: out std_logic;
@@ -83,6 +84,10 @@ signal host_reset_n : std_logic;
 signal host_divert_keyboard : std_logic;
 signal host_divert_sdcard : std_logic;
 
+signal host_bootdata : std_logic_vector(31 downto 0);
+signal host_bootdata_req : std_logic;
+signal host_bootdata_ack : std_logic;
+
 -- Internal keyboard and sdcard signals
 signal host_ps2k_clk_in : std_logic;
 signal host_ps2k_clk_out : std_logic;
@@ -94,7 +99,6 @@ signal host_spi_mosi : std_logic;
 signal host_spi_clk : std_logic;
 signal host_spi_cs : std_logic;
 
-signal ctrl_spi_miso : std_logic;
 signal ctrl_spi_mosi : std_logic;
 signal ctrl_spi_clk : std_logic;
 signal ctrl_spi_cs : std_logic;
@@ -103,9 +107,9 @@ begin
 
 RS232_TXD<='1';
 
-DRAM_CS_N <='1';
-DRAM_RAS_N <='1';
-DRAM_CAS_N <='1';
+--DRAM_CS_N <='1';
+--DRAM_RAS_N <='1';
+--DRAM_CAS_N <='1';
 
 
 -- Multiplex SD card signals between the host and control module
@@ -140,11 +144,10 @@ MyCtrlModule : entity work.CtrlModule
 --		ps2k_divert => ps2k_divert,
 
 		-- SD card signals
---		spi_clk => spi_clk,
---		spi_mosi => spi_mosi,
---		spi_miso => spi_miso,
---		spi_cs => spi_cs,
---		spi_divert => spi_divert,
+		spi_clk => ctrl_spi_clk,
+		spi_mosi => ctrl_spi_mosi,
+		spi_miso => spi_miso,
+		spi_cs => ctrl_spi_cs,
 		
 		-- We leave the mouse disconnected for now
 		
@@ -161,17 +164,42 @@ MyCtrlModule : entity work.CtrlModule
 		-- Control signals
 		host_divert_sdcard => host_divert_sdcard,
 		host_divert_keyboard => host_divert_keyboard,
-		host_reset_n => host_reset_n
+		host_reset_n => host_reset_n,
+		
+		-- Boot data upload signals
+		host_bootdata => host_bootdata,
+		host_bootdata_req => host_bootdata_req,
+		host_bootdata_ack => host_bootdata_ack
 	);
 
 
 -- The core proper
 
 myhostcore : entity work.HostCore
+	generic map
+	(
+		sdram_rows => sdram_rows,
+		sdram_cols => sdram_cols,
+		sysclk_frequency => sysclk_frequency
+	)
 	port map(
 		reset_n => host_reset_n,
 		clk => clk,
 		
+		-- sdram
+		sdr_data => DRAM_DQ,
+		sdr_addr => DRAM_ADDR,
+		sdr_dqm(1) => DRAM_UDQM,
+		sdr_dqm(0) => DRAM_LDQM,
+		sdr_we => DRAM_WE_N,
+		sdr_cas => DRAM_CAS_N,
+		sdr_ras => DRAM_RAS_N,
+		sdr_cs => DRAM_CS_N,
+		sdr_ba(1) => DRAM_BA_1,
+		sdr_ba(0) => DRAM_BA_0,
+	--	sdr_clk => DRAM_CLK,
+		sdr_cke => DRAM_CKE,
+
 		vga_r	=> vga_red_i,
 		vga_g	=> vga_green_i,
 		vga_b => vga_blue_i,
@@ -192,7 +220,11 @@ myhostcore : entity work.HostCore
 		testpattern => testpattern,
 		scalered => scalered,
 		scalegreen => scalegreen,
-		scaleblue => scaleblue
+		scaleblue => scaleblue,
+		
+		bootdata => host_bootdata,
+		bootdata_req => host_bootdata_req,
+		bootdata_ack => host_bootdata_ack
 	);
 
 -- Merge the host's VGA output and the OSD output:
