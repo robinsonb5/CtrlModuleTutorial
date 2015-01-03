@@ -123,16 +123,6 @@ signal reset_s : std_logic;
 begin
 UART1_RTS_N<='1';  -- safe default since we're not using handshaking.
 
-DR_CAS_N <='1';
-DR_CS_N <='1';
-DR_RAS_N <='1';
-DR_WE_N <='1';
-DR_CKE <='1';
-DR_A <=(others=>'1');
-DR_DQMH <='1';
-DR_DQML <='1';
-DR_BA <=(others =>'1');
-
 
 -- DR_CLK_O<='1';
 process(sysclk)
@@ -256,7 +246,7 @@ M1_VGA_SYNC_N<=vga_sync;
 
 -- M1_S(38)<='1';
 
--- DR_A(12)<='0'; -- Temporary measure
+DR_A(12)<='0'; -- Temporary measure
 
 project: entity work.Virtual_Toplevel
 	port map (
@@ -275,16 +265,17 @@ project: entity work.Virtual_Toplevel
 		vga_vs => vga_vsync,
 
 		-- SDRAM
---		sdr_data => DR_D,
---		sdr_addr => DR_A(12 downto 0),
---		sdr_dqm(1) => DR_DQMH,
---		sdr_dqm(0) => DR_DQML,
---		sdr_we => DR_WE_N,
---		sdr_cas => DR_CAS_N,
---		sdr_ras => DR_RAS_N,
---		sdr_cs => DR_CS_N,
---		sdr_ba => DR_BA,
---		sdr_cke => DR_CKE,
+		DRAM_DQ => DR_D,
+		DRAM_ADDR => DR_A(11 downto 0),
+		DRAM_UDQM => DR_DQMH,
+		DRAM_LDQM => DR_DQML,
+		DRAM_WE_N => DR_WE_N,
+		DRAM_CAS_N => DR_CAS_N,
+		DRAM_RAS_N => DR_RAS_N,
+		DRAM_CS_N => DR_CS_N,
+		DRAM_BA_0 => DR_BA(0),
+		DRAM_BA_1 => DR_BA(1),
+		DRAM_CKE => DR_CKE,
 
 		-- SD Card
 		spi_cs => FPGA_SD_D3,
