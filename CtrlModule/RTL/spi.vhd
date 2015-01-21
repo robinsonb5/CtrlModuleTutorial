@@ -18,6 +18,7 @@ entity spi_interface is
 		spiclk_in : in std_logic;	-- Momentary high pulse
 		host_to_spi : in std_logic_vector(7 downto 0);
 		spi_to_host : out std_logic_vector(7 downto 0);
+--		wide : in std_logic; -- 16-bit transfer (in only, 0xff will be transmitted for the second byte)
 		trigger : in std_logic;  -- Momentary high pulse
 		busy : buffer std_logic;
 
@@ -38,18 +39,18 @@ begin
 -- SPI-Interface
 -----------------------------------------------------------------	
 	spiclk_out <= sck;
-	busy <= shiftcnt(3) or trigger; -- Or-ing in the trigger signal makes the busy signal respond immediately
+	busy <= (not shiftcnt(3)) or trigger;
    spi_to_host <= sd_shift;
 
 	PROCESS (sysclk, reset) BEGIN
 
 		IF reset ='0' THEN 
-			shiftcnt(3)<='0';
+			shiftcnt(3)<='1';
 			sck <= '0';
 		ELSIF rising_edge(sysclk) then
 			IF trigger='1' then
-				shiftcnt <= "1111";  -- shift out 8 bits, underflow will clear bit 3, mapped to busy
-				sd_shift <= host_to_spi(7 downto 0);
+				shiftcnt <= "0111";  -- shift out 8, underflow will set bit 3, mapped to busy
+				sd_shift <= host_to_spi(7 downto 0); -- & X"FFFFFF";
 				sck <= '1';
 			ELSE
 				IF spiclk_in='1' and busy='1' THEN
