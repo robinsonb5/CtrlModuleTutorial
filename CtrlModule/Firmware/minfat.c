@@ -46,8 +46,6 @@ JB:
 
 #include "minfat.h"
 #include "swap.h"
-#include "uart.h"
-#include "small_printf.h"
 #include "osd.h"
 
 // Stubs to replace standard C library functions
