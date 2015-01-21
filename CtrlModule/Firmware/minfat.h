@@ -1,7 +1,5 @@
-#ifndef _FAT16_H_INCLUDED
-#define _FAT16_H_INCLUDED
-
-#define MAXDIRENTRIES 8
+#ifndef MINFAT_H
+#define MINFAT_H
 
 
 typedef struct
@@ -105,6 +103,9 @@ int GetFATLink(unsigned int cluster);
 int FileNextSector(fileTYPE *file);
 int FileOpen(fileTYPE *file, const char *name);
 int FileRead(fileTYPE *file, unsigned char *pBuffer);
+#ifndef DISABLE_WRITE
+int FileWrite(fileTYPE *file, unsigned char *pBuffer);
+#endif
 void ChangeDirectory(DIRENTRY *p);
 //unsigned char FileReadEx(fileTYPE *file, unsigned char *pBuffer, unsigned long nSize);
 

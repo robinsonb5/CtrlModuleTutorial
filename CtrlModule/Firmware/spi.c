@@ -1,5 +1,4 @@
 #include "spi.h"
-#include "small_printf.h"
 #include "osd.h"
 
 int SDHCtype;
@@ -36,7 +35,7 @@ int SDHCtype;
 unsigned char SPI_R1[6];
 
 
-int SPI_PUMP()
+static int SPI_PUMP()
 {
 	int r=0;
 	SPI(0xFF);
@@ -50,7 +49,7 @@ int SPI_PUMP()
 	return(r);
 }
 
-int cmd_write(unsigned long cmd, unsigned long lba)
+static int cmd_write(unsigned long cmd, unsigned long lba)
 {
 	int ctr;
 	int result=0xff;
@@ -97,7 +96,7 @@ int cmd_write(unsigned long cmd, unsigned long lba)
 }
 
 
-void spi_spin()
+static void spi_spin()
 {
 //	puts("SPIspin\n");
 	int i;
@@ -107,7 +106,7 @@ void spi_spin()
 }
 
 
-int wait_initV2()
+static int wait_initV2()
 {
 	int i=2000;
 	int r;
@@ -135,7 +134,7 @@ int wait_initV2()
 }
 
 
-int wait_init()
+static int wait_init()
 {
 	int i=20;
 	int r;
@@ -157,7 +156,7 @@ int wait_init()
 }
 
 
-int is_sdhc()
+static int is_sdhc()
 {
 	int i,r;
 
@@ -216,7 +215,7 @@ int is_sdhc()
 }
 
 
-int spi_init()
+int sd_init()
 {
 	int j;
 	int i;
@@ -312,9 +311,6 @@ int sd_write_sector(unsigned long lba,unsigned char *buf) // FIXME - Stub
 	return(0);
 }
 #endif
-
-
-extern void spi_readsector(long *buf);
 
 
 int sd_read_sector(unsigned long lba,unsigned char *buf)

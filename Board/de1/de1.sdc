@@ -46,9 +46,9 @@ create_clock -name {clk_50} -period 20.000 -waveform { 0.000 0.500 } [get_ports 
 #**************************************************************
 
 derive_pll_clocks 
-create_generated_clock -name sd1clk_pin -source [get_pins {U00|altpll_component|pll|clk[2]}] [get_ports {DRAM_CLK}]
-create_generated_clock -name sysclk -source [get_pins {U00|altpll_component|pll|clk[1]}]
-create_generated_clock -name sysclk_slow -source [get_pins {U00|altpll_component|pll|clk[0]}]
+create_generated_clock -name sd1clk_pin -source [get_pins {U00|altpll_component|pll|clk[1]}] [get_ports {DRAM_CLK}]
+create_generated_clock -name sysclk -source [get_pins {U00|altpll_component|pll|clk[0]}]
+# create_generated_clock -name sysclk_slow -source [get_pins {U00|altpll_component|pll|clk[0]}]
 
 #**************************************************************
 # Set Clock Latency
@@ -74,8 +74,8 @@ set_input_delay -clock sysclk -min 0.0 [get_ports {UART_RXD}]
 set_input_delay -clock sysclk -max 0.0 [get_ports {UART_RXD}]
 
 
-set_input_delay  -clock sysclk_slow  -min 0.0 [get_ports {SD_DAT}]
-set_input_delay  -clock sysclk_slow  -min 0.5 [get_ports {SD_DAT}]
+set_input_delay  -clock sysclk  -min 0.0 [get_ports {SD_DAT}]
+set_input_delay  -clock sysclk  -min 0.5 [get_ports {SD_DAT}]
 
 
 #**************************************************************
@@ -89,17 +89,17 @@ set_output_delay -clock sd1clk_pin -min 0.5 [get_ports DRAM_CLK]
 
 # Delays for async signals - not necessary, but might as well avoid
 # having unconstrained ports in the design
-set_output_delay -clock sysclk_slow -min 0.0 [get_ports UART_TXD]
-set_output_delay -clock sysclk_slow -max 0.5 [get_ports UART_TXD]
+set_output_delay -clock sysclk -min 0.0 [get_ports UART_TXD]
+set_output_delay -clock sysclk -max 0.5 [get_ports UART_TXD]
 
-set_output_delay -clock sysclk_slow -min 0.0 [get_ports SD_CLK]
-set_output_delay -clock sysclk_slow -max 0.5 [get_ports SD_CLK]
-set_output_delay -clock sysclk_slow -min 0.0 [get_ports SD_CS]
-set_output_delay -clock sysclk_slow -max 0.5 [get_ports SD_CS]
-set_output_delay -clock sysclk_slow -min 0.0 [get_ports SD_CMD]
-set_output_delay -clock sysclk_slow -max 0.5 [get_ports SD_CMD]
-set_output_delay -clock sysclk_slow -min 0.0 [get_ports SD_DAT3]
-set_output_delay -clock sysclk_slow -max 0.5 [get_ports SD_DAT3]
+set_output_delay -clock sysclk -min 0.0 [get_ports SD_CLK]
+set_output_delay -clock sysclk -max 0.5 [get_ports SD_CLK]
+set_output_delay -clock sysclk -min 0.0 [get_ports SD_CS]
+set_output_delay -clock sysclk -max 0.5 [get_ports SD_CS]
+set_output_delay -clock sysclk -min 0.0 [get_ports SD_CMD]
+set_output_delay -clock sysclk -max 0.5 [get_ports SD_CMD]
+set_output_delay -clock sysclk -min 0.0 [get_ports SD_DAT3]
+set_output_delay -clock sysclk -max 0.5 [get_ports SD_DAT3]
 
 set_output_delay -clock sysclk -min 0.0 [get_ports VGA*]
 set_output_delay -clock sysclk -max 0.5 [get_ports VGA*]
@@ -132,7 +132,7 @@ set_false_path -to {HEX*[*]} -from {*}
 #set_multicycle_path -from [get_clocks {U00|altpll_component|auto_generated|pll1|clk[0]}] -to [get_clocks {sd2clk_pin}] -setup -end 2
 #set_multicycle_path -from [get_clocks {U002|altpll_component|auto_generated|pll1|clk[0]}] -to [get_clocks {sd2clk_pin}] -setup -end 2
 
-set_multicycle_path -from [get_clocks {sd1clk_pin}] -to [get_clocks {U00|altpll_component|pll|clk[1]}] -setup -end 2
+set_multicycle_path -from [get_clocks {sd1clk_pin}] -to [get_clocks {U00|altpll_component|pll|clk[0]}] -setup -end 2
 
 # set_multicycle_path -from {VirtualToplevel:myVirtualToplevel|*:myrom|*} -to {VirtualToplevel:myVirtualToplevel|zpu_core:zpu|*} -setup -end 2
 # set_multicycle_path -from {VirtualToplevel:myVirtualToplevel|*:myrom|*} -to {VirtualToplevel:myVirtualToplevel|zpu_core:zpu|*} -hold -end 2

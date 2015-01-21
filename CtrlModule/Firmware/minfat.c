@@ -50,26 +50,32 @@ JB:
 #include "small_printf.h"
 #include "osd.h"
 
+// Stubs to replace standard C library functions
+#define puts OSD_Puts
 #define tolower(x) (x|32)
 
-unsigned int directory_cluster;       // first cluster of directory (0 if root)
-unsigned int entries_per_cluster;     // number of directory entries per cluster
+
+static unsigned int directory_cluster;       // first cluster of directory (0 if root)
+static unsigned int entries_per_cluster;     // number of directory entries per cluster
 
 // internal global variables
-unsigned int fat32;                // volume format is FAT32
-unsigned long fat_start;                // start LBA of first FAT table
-unsigned long data_start;               // start LBA of data field
-unsigned long root_directory_cluster;   // root directory cluster (used in FAT32)
-unsigned long root_directory_start;     // start LBA of directory table
-unsigned long root_directory_size;      // size of directory region in sectors
-unsigned int fat_number;               // number of FAT tables
+static unsigned int fat32;                // volume format is FAT32
+static unsigned long fat_start;                // start LBA of first FAT table
+static unsigned long data_start;               // start LBA of data field
+static unsigned long root_directory_cluster;   // root directory cluster (used in FAT32)
+static unsigned long root_directory_start;     // start LBA of directory table
+static unsigned long root_directory_size;      // size of directory region in sectors
+static unsigned int fat_number;               // number of FAT tables
 unsigned int cluster_size;             // size of a cluster in sectors
 unsigned long cluster_mask;             // binary mask of cluster number
-unsigned int dir_entries;             // number of entry's in directory table
-unsigned long fat_size;                 // size of fat
+static unsigned long fat_size;                 // size of fat
 
-unsigned int current_directory_cluster;
-unsigned int current_directory_start;
+static unsigned int current_directory_cluster;
+static unsigned int current_directory_start;
+
+static int partitioncount;
+
+unsigned int dir_entries;             // number of entry's in directory table
 
 unsigned char sector_buffer[512];       // sector buffer
 
@@ -77,17 +83,10 @@ unsigned char sector_buffer[512];       // sector buffer
 char longfilename[260];
 #endif
 
-int partitioncount;
-
 #define fat_buffer (*(FATBUFFER*)&sector_buffer) // Don't need a separate buffer for this.
 
-#define puts OSD_Puts
 
-
-#define debug printf
-
-
-int compare(const char *s1, const char *s2,int b)
+static int compare(const char *s1, const char *s2,int b)
 {
 	int i;
 	for(i=0;i<b;++i)
@@ -104,11 +103,22 @@ int FindDrive(void)
 {
 	unsigned long boot_sector;              // partition boot sector
 	fat32=0;
-
-    if (!sd_read_sector(0, sector_buffer)) // read MBR
+	int i;
+	
+	i=5;
+	i=5;
+	while(--i>0)
 	{
-		puts("MBR fail\n");
-        return(0);
+		if(sd_init())
+		{
+		    if(sd_read_sector(0, sector_buffer)) // read MBR
+				i=-1;
+		}
+	}
+	if(!i)	// Did we escape the loop?
+	{
+		OSD_Puts("Card init failed\n");
+		return(0);
 	}
 
 	boot_sector=0;

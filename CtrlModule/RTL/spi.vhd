@@ -31,25 +31,25 @@ end entity;
 architecture rtl of spi_interface is
 signal sck : std_logic;
 signal sd_shift : std_logic_vector(7 downto 0);
-signal shiftcnt : std_logic_vector(5 downto 0);
+signal shiftcnt : std_logic_vector(3 downto 0);
 begin
 
 -----------------------------------------------------------------
 -- SPI-Interface
 -----------------------------------------------------------------	
 	spiclk_out <= sck;
-	busy <= shiftcnt(5) or trigger;
+	busy <= shiftcnt(3) or trigger; -- Or-ing in the trigger signal makes the busy signal respond immediately
    spi_to_host <= sd_shift;
 
 	PROCESS (sysclk, reset) BEGIN
 
 		IF reset ='0' THEN 
-			shiftcnt(5)<='0';
+			shiftcnt(3)<='0';
 			sck <= '0';
 		ELSIF rising_edge(sysclk) then
 			IF trigger='1' then
-				shiftcnt <= "100111";  -- shift out 8 bits, underflow will clear bit 5, mapped to busy
-				sd_shift <= host_to_spi(7 downto 0); -- & X"FFFFFF";
+				shiftcnt <= "1111";  -- shift out 8 bits, underflow will clear bit 3, mapped to busy
+				sd_shift <= host_to_spi(7 downto 0);
 				sck <= '1';
 			ELSE
 				IF spiclk_in='1' and busy='1' THEN

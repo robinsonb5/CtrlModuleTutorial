@@ -168,18 +168,9 @@ int main(int argc,char **argv)
 
 	HW_HOST(REG_HOST_CONTROL)=HOST_CONTROL_DIVERT_SDCARD; // Release reset but take control of the SD card
 	OSD_Puts("Initializing SD card\n");
-	i=5;
-	while(--i>0)
-	{
-		spi_init();
-		if(FindDrive())
-			i=-1;
-	}
-	if(!i)	// Did we escape the loop?
-	{
-		OSD_Puts("Card init failed\n");
+
+	if(!FindDrive())
 		return(0);
-	}
 
 	OSD_Puts("Loading initial ROM...\n");
 

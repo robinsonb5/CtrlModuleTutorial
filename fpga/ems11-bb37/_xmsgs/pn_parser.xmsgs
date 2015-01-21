@@ -11,5 +11,65 @@
 <msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;/home/amr/FPGA/Projects/CtrlModuleTutorial/Board/ems11-bb37/EMS11_BB37Toplevel.vhd&quot; into library work</arg>
 </msg>
 
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;/home/amr/FPGA/Projects/CtrlModuleTutorial/CtrlModule/CharROM/CharROM_ROM.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;/home/amr/FPGA/Projects/CtrlModuleTutorial/CtrlModule/Firmware/CtrlROM_ROM.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;/home/amr/FPGA/Projects/CtrlModuleTutorial/CtrlModule/RTL/CtrlModule.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;/home/amr/FPGA/Projects/CtrlModuleTutorial/CtrlModule/RTL/DualPortRAM_2RW_1Clock_Unreg.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;/home/amr/FPGA/Projects/CtrlModuleTutorial/CtrlModule/RTL/OSD_Overlay.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;/home/amr/FPGA/Projects/CtrlModuleTutorial/CtrlModule/RTL/OnScreenDisplay.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;/home/amr/FPGA/Projects/CtrlModuleTutorial/CtrlModule/RTL/interrupt_controller.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;/home/amr/FPGA/Projects/CtrlModuleTutorial/CtrlModule/RTL/io_ps2_com.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;/home/amr/FPGA/Projects/CtrlModuleTutorial/CtrlModule/RTL/spi.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;/home/amr/FPGA/Projects/CtrlModuleTutorial/RTL/DMACache.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;/home/amr/FPGA/Projects/CtrlModuleTutorial/RTL/DMACacheRAM.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;/home/amr/FPGA/Projects/CtrlModuleTutorial/RTL/DMACache_config.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;/home/amr/FPGA/Projects/CtrlModuleTutorial/RTL/DMACache_pkg.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;/home/amr/FPGA/Projects/CtrlModuleTutorial/RTL/HostCore.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;/home/amr/FPGA/Projects/CtrlModuleTutorial/RTL/sdram_simple.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;/home/amr/FPGA/Projects/CtrlModuleTutorial/RTL/vga_controller.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;/home/amr/FPGA/Projects/CtrlModuleTutorial/RTL/video_vga_master.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;/home/amr/FPGA/Projects/CtrlModuleTutorial/RTL/virtual_toplevel.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;/home/amr/FPGA/Projects/CtrlModuleTutorial/ZPUFlex/RTL/zpu_core_flex.vhd&quot; into library work</arg>
+</msg>
+
+<msg type="info" file="ProjectMgmt" num="1061" ><arg fmt="%s" index="1">Parsing VHDL file &quot;/home/amr/FPGA/Projects/CtrlModuleTutorial/ZPUFlex/RTL/zpupkg.vhd&quot; into library work</arg>
+</msg>
+
 </messages>
 
