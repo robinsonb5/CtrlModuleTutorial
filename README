@@ -1,12 +1,31 @@
 CtrlModuleTutorial
 ------------------
 
-This repository will contain a demo project, tagged at key points,
+This repository contains a demo project, tagged at key points,
 demonstrating how to add an on-screen display and control CPU
 to an FPGA core.
 
+The Tags are as follows:
+StartingPoint - A simple VGA test-pattern generator to which we
+	add a control module as the series progresses
+
+Step1 - Adds a ZPUFlex CPU core which periodically signals the
+	test pattern generator.
+
+Step2 - Hello World, testing an on-screen display component.
+
+Step3 - Adding keyboard control.
+
+Step4 - Adding a menu controlled by the keyboard.
+
+Step5 - Arbitrating for access between the control module and host core.
+
+Step6 - Loading files from SD card.
+
+
 Checkout instructions
 ---------------------
+
 The Control Module uses the ZPUFlex processor, which this repository includes
 as a git submodule - to pull in the requisite files do the following:
 
