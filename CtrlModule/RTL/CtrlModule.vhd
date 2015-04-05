@@ -137,6 +137,7 @@ begin
 		IMPL_CALL => true,
 		IMPL_SHIFT => true,
 		IMPL_XOR => true,
+		CACHE => true,	-- Modest speed-up when running from ROM
 --		IMPL_EMULATION => minimal, -- Emulate only byte/halfword accesses, with alternateive emulation table
 		REMAP_STACK => false, -- We're not using SDRAM so no need to remap the Boot ROM / Stack RAM
 		EXECUTE_RAM => false, -- We don't need to execute code from external RAM.
